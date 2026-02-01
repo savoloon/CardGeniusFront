@@ -1,0 +1,11 @@
+export { default as LandingBackground } from './LandingBackground';
+export { default as HeroSection } from './HeroSection';
+export { default as StatsSection } from './StatsSection';
+export { default as VideoSection } from './VideoSection';
+export { default as PainsSection } from './PainsSection';
+export { default as SolutionSection } from './SolutionSection';
+export { default as CasesSection } from './CasesSection';
+export { default as ToolsSection } from './ToolsSection';
+export { default as TrustSection } from './TrustSection';
+export { default as PricingSection } from './PricingSection';
+export { default as FinalCTASection } from './FinalCTASection';

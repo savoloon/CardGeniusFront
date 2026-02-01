@@ -1,0 +1,127 @@
+.section {
+  padding: clamp(4rem, 10vw, 8rem) 1.5rem;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 3rem;
+  opacity: 0;
+  transform: translateY(24px);
+  transition: all 0.6s var(--ease-default);
+}
+
+.header.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.grid.visible .card {
+  animation: priceCardIn 0.6s var(--ease-default) forwards;
+}
+
+@keyframes priceCardIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.header h2 {
+  margin: 0;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+.card {
+  position: relative;
+  opacity: 0;
+  transform: translateY(30px);
+  padding: 2rem;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: all var(--transition-base);
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-soft);
+}
+
+.cardHighlighted {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 1px var(--color-accent), var(--shadow-soft);
+}
+
+.cardHighlighted:hover {
+  box-shadow: var(--shadow-glow);
+}
+
+.badge {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: var(--gradient-ai);
+  color: white;
+  border-radius: 20px;
+}
+
+.card:not(.cardHighlighted) .badge {
+  background: var(--color-text-dim);
+}
+
+.name {
+  font-size: 1.25rem;
+  margin: 0 0 0.5rem;
+}
+
+.price {
+  margin-bottom: 1.5rem;
+}
+
+.priceValue {
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.period {
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+.features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1.5rem;
+}
+
+.features li {
+  padding: 0.5rem 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+  position: relative;
+  padding-left: 1.25rem;
+}
+
+.features li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.cta {
+  width: 100%;
+}

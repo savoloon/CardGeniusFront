@@ -1,0 +1,29 @@
+.main {
+  position: relative;
+  min-height: 100vh;
+}
+
+.footer {
+  padding: 3rem 1.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.footerInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.logo {
+  font-family: var(--font-display);
+  font-weight: 700;
+  color: var(--color-text-muted);
+  font-size: 0.9375rem;
+}
+
+.copyright {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--color-text-dim);
+}

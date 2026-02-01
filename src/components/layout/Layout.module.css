@@ -1,0 +1,45 @@
+.layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+}
+
+.header {
+  padding: 2rem 1.5rem;
+  text-align: center;
+  background: var(--color-bg-elevated);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.logoLink {
+  text-decoration: none;
+}
+
+.logo {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text);
+}
+
+.logoLink:hover .logo {
+  color: var(--color-accent);
+}
+
+.logoIcon {
+  margin-right: 0.5rem;
+  color: var(--color-accent);
+}
+
+.tagline {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+.main {
+  flex: 1;
+  padding: 3rem 1.5rem;
+}

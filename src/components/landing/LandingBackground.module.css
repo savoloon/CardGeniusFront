@@ -1,0 +1,156 @@
+.wrapper {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+}
+
+/* Сетка */
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(99, 102, 241, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 102, 241, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 30%, transparent 70%);
+}
+
+/* Анимированные градиентные орбы */
+.gradientOrb1 {
+  position: absolute;
+  width: 800px;
+  height: 800px;
+  top: -300px;
+  left: -200px;
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.2) 0%,
+    rgba(118, 75, 162, 0.08) 40%,
+    transparent 70%
+  );
+  animation: float1 25s ease-in-out infinite;
+}
+
+.gradientOrb2 {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  top: 40%;
+  right: -150px;
+  background: radial-gradient(
+    circle,
+    rgba(0, 198, 191, 0.12) 0%,
+    rgba(99, 102, 241, 0.05) 40%,
+    transparent 70%
+  );
+  animation: float2 20s ease-in-out infinite;
+}
+
+.gradientOrb3 {
+  position: absolute;
+  width: 500px;
+  height: 500px;
+  bottom: -100px;
+  left: 30%;
+  background: radial-gradient(
+    circle,
+    rgba(118, 75, 162, 0.15) 0%,
+    transparent 60%
+  );
+  animation: float3 22s ease-in-out infinite;
+}
+
+.gradientOrb4 {
+  position: absolute;
+  width: 400px;
+  height: 400px;
+  top: 60%;
+  right: 20%;
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.1) 0%,
+    transparent 60%
+  );
+  animation: float4 18s ease-in-out infinite;
+}
+
+@keyframes float1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(50px, 80px) scale(1.05); }
+  66% { transform: translate(-30px, -40px) scale(0.98); }
+}
+
+@keyframes float2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-80px, -60px); }
+}
+
+@keyframes float3 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(40px, -80px); }
+}
+
+@keyframes float4 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-60px, 40px); }
+}
+
+/* Текстурный шум */
+.noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.02;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Горизонтальные свечения */
+.glowLine1 {
+  position: absolute;
+  top: 20%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(99, 102, 241, 0.3) 20%,
+    rgba(99, 102, 241, 0.5) 50%,
+    rgba(99, 102, 241, 0.3) 80%,
+    transparent 100%
+  );
+  opacity: 0.5;
+}
+
+.glowLine2 {
+  position: absolute;
+  top: 60%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(118, 75, 162, 0.2) 30%,
+    rgba(118, 75, 162, 0.3) 50%,
+    rgba(118, 75, 162, 0.2) 70%,
+    transparent 100%
+  );
+  opacity: 0.4;
+}
+
+.glowLine3 {
+  position: absolute;
+  bottom: 25%;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(0, 198, 191, 0.15) 40%,
+    rgba(0, 198, 191, 0.2) 50%,
+    transparent 100%
+  );
+  opacity: 0.3;
+}
