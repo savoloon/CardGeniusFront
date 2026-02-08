@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui';
+import { useAuth } from '../../contexts/AuthContext';
 import styles from './LandingHeader.module.css';
 
 const navLinks = [
@@ -12,6 +13,7 @@ const navLinks = [
 
 export default function LandingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isAuthenticated } = useAuth();
 
   return (
     <header className={styles.header}>
@@ -35,11 +37,19 @@ export default function LandingHeader() {
         </nav>
 
         <div className={styles.actions}>
-          <Link to="/register">
-            <Button variant="primary" className={styles.ctaButton}>
-              Создать карточку бесплатно
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <Link to="/dashboard">
+              <Button variant="primary" className={styles.ctaButton}>
+                Панель
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/login">
+              <Button variant="primary" className={styles.ctaButton}>
+                Войти
+              </Button>
+            </Link>
+          )}
           <button
             type="button"
             className={styles.menuToggle}

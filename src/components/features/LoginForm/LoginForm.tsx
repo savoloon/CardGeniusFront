@@ -2,45 +2,40 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button, Input, Card } from '../../ui';
 import {
-  registerUser,
-  type RegisterResponse,
+  loginUser,
+  type LoginResponse,
   type ApiError,
 } from '../../../services/api';
-import styles from './RegistrationForm.module.css';
+import styles from './LoginForm.module.css';
 
 interface FormData {
   email: string;
   password: string;
-  confirmPassword: string;
-  isAdmin: boolean;
 }
 
 interface FormErrors {
   email?: string;
   password?: string;
-  confirmPassword?: string;
   submit?: string;
 }
 
-interface RegistrationFormProps {
-  onSuccess?: (data: RegisterResponse['data']) => void;
+interface LoginFormProps {
+  onSuccess?: (data: LoginResponse['data']) => void;
 }
 
-export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
+export default function LoginForm({ onSuccess }: LoginFormProps) {
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
-    confirmPassword: '',
-    isAdmin: false,
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value,
+      [name]: value,
     }));
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
@@ -56,12 +51,6 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
 
     if (!formData.password) {
       newErrors.password = 'Пароль обязателен';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Пароль должен быть не менее 6 символов';
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Пароли не совпадают';
     }
 
     setErrors(newErrors);
@@ -77,17 +66,16 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
     setErrors({});
 
     try {
-      const response = await registerUser({
+      const response = await loginUser({
         email: formData.email,
         password: formData.password,
-        isAdmin: formData.isAdmin,
       });
 
       if (response.success) {
         onSuccess?.(response.data);
       } else {
         setErrors({
-          submit: response.message ?? 'Ошибка регистрации',
+          submit: response.message ?? 'Ошибка входа',
         });
       }
     } catch (err) {
@@ -111,9 +99,9 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   return (
     <Card className={styles.card}>
       <form onSubmit={handleSubmit} className={styles.form} noValidate>
-        <h2 className={styles.title}>Регистрация</h2>
+        <h2 className={styles.title}>Вход</h2>
         <p className={styles.subtitle}>
-          Создайте аккаунт для управления карточками товаров
+          Войдите в аккаунт для управления карточками товаров
         </p>
 
         <Input
@@ -134,21 +122,9 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
           type="password"
           value={formData.password}
           onChange={handleChange}
-          placeholder="Минимум 6 символов"
+          placeholder="Введите пароль"
           error={errors.password}
-          autoComplete="new-password"
-          disabled={loading}
-        />
-
-        <Input
-          label="Подтвердите пароль"
-          name="confirmPassword"
-          type="password"
-          value={formData.confirmPassword}
-          onChange={handleChange}
-          placeholder="Повторите пароль"
-          error={errors.confirmPassword}
-          autoComplete="new-password"
+          autoComplete="current-password"
           disabled={loading}
         />
 
@@ -159,13 +135,13 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         )}
 
         <Button type="submit" fullWidth loading={loading} disabled={loading}>
-          Зарегистрироваться
+          Войти
         </Button>
 
         <p className={styles.footer}>
-          Уже есть аккаунт?{' '}
-          <Link to="/login" className={styles.link}>
-            Войти
+          Нет аккаунта?{' '}
+          <Link to="/register" className={styles.link}>
+            Зарегистрироваться
           </Link>
         </p>
       </form>

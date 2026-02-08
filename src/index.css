@@ -133,3 +133,9 @@ a:hover {
   margin: 0;
   font-size: 1.125rem;
 }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
