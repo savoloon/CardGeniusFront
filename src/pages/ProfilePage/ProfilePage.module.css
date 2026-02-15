@@ -1,0 +1,68 @@
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+.section {
+  margin-bottom: 1.5rem;
+}
+
+.sectionTitle {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.emailDisplay {
+  padding: 0.75rem 1rem;
+  background: var(--color-bg-input);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  color: var(--color-text);
+}
+
+.formRow {
+  margin-bottom: 1rem;
+}
+
+.formRow:last-of-type {
+  margin-bottom: 0;
+}
+
+.error {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #fca5a5;
+}
+
+.success {
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #6ee7b7;
+}
+
+.passwordStep {
+  margin-top: 1rem;
+}
+
+.passwordStep .formRow {
+  margin-bottom: 1rem;
+}

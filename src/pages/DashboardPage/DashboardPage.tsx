@@ -1,21 +1,23 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
-import { Card, Button } from '../components/ui';
-import ImageUploadZone from '../components/dashboard/ImageUploadZone';
-import ProcessModeSelector from '../components/dashboard/ProcessModeSelector';
-import ProcessOptions from '../components/dashboard/ProcessOptions';
-import ProcessQueueStatus from '../components/dashboard/ProcessQueueStatus';
-import ProcessResults from '../components/dashboard/ProcessResults';
+import { Card, Button } from '../../components/ui';
+import { useLanguage } from '../../contexts/LanguageContext';
+import ImageUploadZone from '../../components/dashboard/ImageUploadZone';
+import ProcessModeSelector from '../../components/dashboard/ProcessModeSelector';
+import ProcessOptions from '../../components/dashboard/ProcessOptions';
+import ProcessQueueStatus from '../../components/dashboard/ProcessQueueStatus';
+import ProcessResults from '../../components/dashboard/ProcessResults';
 import {
   submitProcess,
   getProcessStatus,
   type ProcessMode,
   type ApiError,
-} from '../services/api';
+} from '../../services/api';
 import styles from './DashboardPage.module.css';
 
 const POLL_INTERVAL = 2000;
 
 export default function DashboardPage() {
+  const { t } = useLanguage();
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [mode, setMode] = useState<ProcessMode>('remove_background');
@@ -79,7 +81,7 @@ export default function DashboardPage() {
 
   const handleSubmit = async () => {
     if (!image) {
-      setError('Загрузите изображение');
+      setError(t('dashboard.uploadImageError'));
       return;
     }
 
@@ -123,10 +125,8 @@ export default function DashboardPage() {
     <div className={styles.page}>
       <div className={styles.container}>
         <header className={styles.header}>
-          <h1 className={styles.title}>Обработка изображений</h1>
-          <p className={styles.subtitle}>
-            Загрузите изображение и выберите режим обработки. AI создаст результат в очереди.
-          </p>
+          <h1 className={styles.title}>{t('dashboard.title')}</h1>
+          <p className={styles.subtitle}>{t('dashboard.subtitle')}</p>
         </header>
 
         <div className={styles.grid}>
@@ -164,7 +164,7 @@ export default function DashboardPage() {
                 disabled={!image || submitting}
                 onClick={handleSubmit}
               >
-                Обработать
+                {t('dashboard.process')}
               </Button>
               {error && (
                 <p className={styles.error} role="alert">
@@ -195,7 +195,7 @@ export default function DashboardPage() {
                   className={styles.newTaskBtn}
                   onClick={handleNewTask}
                 >
-                  Новое изображение
+                  {t('dashboard.newImage')}
                 </Button>
               </Card>
             )}
@@ -203,7 +203,7 @@ export default function DashboardPage() {
             {!queueStatus && resultImages.length === 0 && (
               <div className={styles.empty}>
                 <span className={styles.emptyIcon}>◇</span>
-                <p>Загрузите изображение и нажмите «Обработать»</p>
+                <p>{t('dashboard.emptyHint')}</p>
               </div>
             )}
           </section>

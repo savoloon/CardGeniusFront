@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import LoginForm from '../components/features/LoginForm';
-import type { ApiUser } from '../services/api';
+import { useAuth } from '../../contexts/AuthContext';
+import LoginForm from '../../components/features/LoginForm';
+import type { ApiUser } from '../../services/api';
 import styles from './LoginPage.module.css';
 
 interface SuccessData {
@@ -11,12 +12,13 @@ interface SuccessData {
 export default function LoginPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { setUserFromLogin } = useAuth();
 
   const handleSuccess = (data?: SuccessData) => {
-    setSuccessMessage(
-      `Вход выполнен! Добро пожаловать, ${data?.user?.email ?? 'пользователь'}`
-    );
-    setTimeout(() => navigate('/dashboard'), 1500);
+    if (data?.user) {
+      setUserFromLogin({ user: data.user });
+    }
+    navigate('/dashboard');
   };
 
   return (

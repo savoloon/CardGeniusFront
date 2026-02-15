@@ -1,0 +1,25 @@
+.wrap {
+  width: 100%;
+  min-height: 100px;
+  display: block;
+}
+
+/* Контейнер виджета и iframe — на всю ширину формы */
+.wrap :global(div.smart-captcha),
+.wrap :global(.smart-captcha) {
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+.wrap :global(iframe) {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  box-sizing: border-box;
+}
+
+.disabled {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}

@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Button } from '../ui';
+import { Button, ThemeToggle, LanguageToggle } from '../ui';
+import { useLanguage } from '../../contexts/LanguageContext';
 import styles from './DashboardLayout.module.css';
 
 interface DashboardLayoutProps {
@@ -11,6 +12,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleLogout = async () => {
     await logout();
@@ -27,9 +29,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </Link>
 
           <nav className={styles.nav}>
+            <ThemeToggle />
+            <LanguageToggle />
+            <Link to="/profile" className={styles.profileLink}>
+              {t('common.profile')}
+            </Link>
+            {user?.isAdmin && (
+              <Link to="/admin" className={styles.profileLink}>
+                {t('common.admin')}
+              </Link>
+            )}
             <span className={styles.userEmail}>{user?.email}</span>
             <Button variant="outline" onClick={handleLogout} className={styles.logoutBtn}>
-              Выйти
+              {t('common.logout')}
             </Button>
           </nav>
         </div>

@@ -1,6 +1,7 @@
-import { useSmoothScroll } from '../hooks/useSmoothScroll';
-import LandingHeader from '../components/layout/LandingHeader';
-import { LandingBackground } from '../components/landing';
+import { useSmoothScroll } from '../../hooks/useSmoothScroll';
+import LandingHeader from '../../components/layout/LandingHeader';
+import { LandingBackground } from '../../components/landing';
+import { useLanguage } from '../../contexts/LanguageContext';
 import {
   HeroSection,
   StatsSection,
@@ -12,11 +13,12 @@ import {
   TrustSection,
   PricingSection,
   FinalCTASection,
-} from '../components/landing';
+} from '../../components/landing';
 import styles from './LandingPage.module.css';
 
 export default function LandingPage() {
   useSmoothScroll();
+  const { t } = useLanguage();
 
   return (
     <>
@@ -35,9 +37,9 @@ export default function LandingPage() {
         <FinalCTASection />
         <footer className={styles.footer}>
           <div className={styles.footerInner}>
-            <span className={styles.logo}>◇ Card Genius AI</span>
+            <span className={styles.logo}>{t('landing.footerLogo')}</span>
             <p className={styles.copyright}>
-              © {new Date().getFullYear()} Card Genius AI. Карточки товаров для маркетплейсов.
+              {t('landing.footerCopy', { year: new Date().getFullYear() })}
             </p>
           </div>
         </footer>

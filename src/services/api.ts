@@ -3,6 +3,7 @@ const API_URL = import.meta.env.VITE_API_URL || '/api';
 export interface RegisterUserData {
   email: string;
   password: string;
+  smartToken: string;
   isAdmin?: boolean;
 }
 
@@ -34,10 +35,25 @@ interface RequestConfig extends RequestInit {
   headers?: HeadersInit & { 'Content-Type'?: string };
 }
 
-async function request<T>(endpoint: string, options: RequestConfig = {}): Promise<T> {
+interface RequestInternalOptions {
+  skipAuthRetry?: boolean;
+}
+
+let sessionExpiredHandler: (() => void) | null = null;
+
+export function setSessionExpiredHandler(handler: (() => void) | null) {
+  sessionExpiredHandler = handler;
+}
+
+async function request<T>(
+  endpoint: string,
+  options: RequestConfig = {},
+  internalOptions: RequestInternalOptions = {}
+): Promise<T> {
+  const { skipAuthRetry = false } = internalOptions;
   const url = `${API_URL}${endpoint}`;
   const config: RequestInit = {
-    credentials: 'include', // Required for cookies (HttpOnly)
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
@@ -48,11 +64,37 @@ async function request<T>(endpoint: string, options: RequestConfig = {}): Promis
   const response = await fetch(url, config);
 
   if (!response.ok) {
+    const status = response.status;
+    const data = await response.json().catch(() => ({}));
+
+    // Только 401 (Unauthorized) считаем поводом попытаться обновить токен.
+    // 403 (Forbidden) — доступ запрещён, не сбрасываем сессию.
+    if (status === 401 && !skipAuthRetry) {
+      try {
+        const refreshRes = await request<LoginResponse>(
+          '/auth/refresh',
+          { method: 'POST' },
+          { skipAuthRetry: true }
+        );
+        if (refreshRes.success) {
+          return request<T>(endpoint, options, { skipAuthRetry: true });
+        }
+      } catch {
+        // refresh не удался
+      }
+      sessionExpiredHandler?.();
+      // Не редиректим, если 401 вернул именно /auth/refresh (при загрузке без валидного токена),
+      // иначе бесконечный цикл: редирект → загрузка → refresh 401 → редирект → ...
+      if (endpoint !== '/auth/refresh') {
+        window.location.href = '/';
+      }
+      const error = new Error(response.statusText) as Error & ApiError;
+      error.response = { status, data };
+      throw error;
+    }
+
     const error = new Error(response.statusText) as Error & ApiError;
-    error.response = {
-      status: response.status,
-      data: await response.json().catch(() => ({})),
-    };
+    error.response = { status, data };
     throw error;
   }
 
@@ -110,6 +152,59 @@ export interface MeResponse {
 
 export async function getCurrentUser(): Promise<MeResponse> {
   return request<MeResponse>('/auth/me');
+}
+
+export interface UpdateProfileData {
+  email?: string;
+  currentPassword?: string;
+  newPassword?: string;
+}
+
+export interface UpdateProfileResponse {
+  success: boolean;
+  message?: string;
+  data?: { user: ApiUser };
+}
+
+export async function updateProfile(data: UpdateProfileData): Promise<UpdateProfileResponse> {
+  return request<UpdateProfileResponse>('/auth/me', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export interface AdminUser {
+  id: number;
+  email: string;
+  isAdmin: boolean;
+  createdAt: string;
+}
+
+export interface AdminPlan {
+  id: number;
+  name: string;
+  price: number;
+  description: string | null;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface AdminUsersResponse {
+  success: boolean;
+  data?: { users: AdminUser[] };
+}
+
+export interface AdminPlansResponse {
+  success: boolean;
+  data?: { plans: AdminPlan[] };
+}
+
+export async function getAdminUsers(): Promise<AdminUsersResponse> {
+  return request<AdminUsersResponse>('/admin/users');
+}
+
+export async function getAdminPlans(): Promise<AdminPlansResponse> {
+  return request<AdminPlansResponse>('/admin/plans');
 }
 
 export type ProcessMode =

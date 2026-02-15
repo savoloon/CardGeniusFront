@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui';
+import { useLanguage } from '../../contexts/LanguageContext';
 import styles from './HeroSection.module.css';
 
 const SLIDER_ITEMS = [
@@ -22,6 +23,7 @@ const SLIDER_ITEMS = [
 ];
 
 export default function HeroSection() {
+  const { t } = useLanguage();
   const [activeSlide, setActiveSlide] = useState(0);
 
   useEffect(() => {
@@ -34,20 +36,18 @@ export default function HeroSection() {
   return (
     <section className={styles.hero}>
       <div className={styles.content}>
-        <span className={styles.eyebrow}>AI для маркетплейсов</span>
+        <span className={styles.eyebrow}>{t('landing.heroEyebrow')}</span>
         <h1 className={styles.title}>
-          Вдохни жизнь в карточки товаров.<br />
-          Искусственный интеллект для продающих изображений.
+          {t('landing.heroTitle')}<br />
+          {t('landing.heroTitle2')}
         </h1>
         <p className={styles.subtitle}>
-          Загрузите фото товара - получите десятки вариантов для Wildberries,
-          Ozon, Яндекс.Маркет. Автоматическая обработка фона, AI-примерка и
-          ретушь в одном сервисе.
+          {t('landing.heroSubtitle')}
         </p>
         <div className={styles.actions}>
           <Link to="/register">
             <Button variant="primary" className={styles.primaryCta}>
-              <span>Создать первую карточку бесплатно</span>
+              <span>{t('landing.heroCta')}</span>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M5 12h14M12 5l7 7-7 7" />
               </svg>
@@ -55,7 +55,7 @@ export default function HeroSection() {
           </Link>
           <a href="#demo" className={styles.secondaryCta}>
             <span className={styles.playIcon}>▶</span>
-            Смотреть демо (60 сек)
+            {t('landing.heroDemo')}
           </a>
         </div>
       </div>

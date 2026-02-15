@@ -1,19 +1,22 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Button } from '../ui';
+import { Button, ThemeToggle, LanguageToggle } from '../ui';
 import { useAuth } from '../../contexts/AuthContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import styles from './LandingHeader.module.css';
 
-const navLinks = [
-  { href: '#how-it-works', label: 'Как это работает' },
-  { href: '#cases', label: 'Кейсы' },
-  { href: '#tools', label: 'Возможности' },
-  { href: '#pricing', label: 'Тарифы' },
-];
+const navKeys = ['menuHow', 'menuCases', 'menuTools', 'menuPricing'] as const;
+const navHrefs: Record<(typeof navKeys)[number], string> = {
+  menuHow: '#how-it-works',
+  menuCases: '#cases',
+  menuTools: '#tools',
+  menuPricing: '#pricing',
+};
 
 export default function LandingHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
   const { isAuthenticated } = useAuth();
+  const { t } = useLanguage();
 
   return (
     <header className={styles.header}>
@@ -24,29 +27,31 @@ export default function LandingHeader() {
         </Link>
 
         <nav className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}>
-          {navLinks.map((link) => (
+          {navKeys.map((key) => (
             <a
-              key={link.href}
-              href={link.href}
+              key={key}
+              href={navHrefs[key]}
               className={styles.navLink}
               onClick={() => setMenuOpen(false)}
             >
-              {link.label}
+              {t(`layout.${key}`)}
             </a>
           ))}
         </nav>
 
         <div className={styles.actions}>
+          <ThemeToggle />
+          <LanguageToggle />
           {isAuthenticated ? (
             <Link to="/dashboard">
               <Button variant="primary" className={styles.ctaButton}>
-                Панель
+                {t('common.panel')}
               </Button>
             </Link>
           ) : (
             <Link to="/login">
               <Button variant="primary" className={styles.ctaButton}>
-                Войти
+                {t('common.login')}
               </Button>
             </Link>
           )}

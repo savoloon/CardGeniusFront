@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Input, Card } from '../../ui';
+import { Button, Input, Card, PasswordRequirements, CaptchaWidget } from '../../ui';
 import {
   registerUser,
   type RegisterResponse,
   type ApiError,
 } from '../../../services/api';
+import { getPasswordChecks, allPasswordChecksPass } from '../../../utils/passwordValidation';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import styles from './RegistrationForm.module.css';
 
 interface FormData {
@@ -27,6 +29,7 @@ interface RegistrationFormProps {
 }
 
 export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -35,6 +38,7 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState('');
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -45,23 +49,29 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
     setErrors((prev) => ({ ...prev, [name]: undefined }));
   };
 
+  const passwordChecks = useMemo(
+    () => getPasswordChecks(formData.password),
+    [formData.password]
+  );
+  const passwordValid = allPasswordChecksPass(formData.password);
+
   const validate = (): boolean => {
     const newErrors: FormErrors = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email обязателен';
+      newErrors.email = t('auth.emailRequired');
     } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = 'Введите корректный email';
+      newErrors.email = t('auth.emailInvalid');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Пароль обязателен';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Пароль должен быть не менее 6 символов';
+      newErrors.password = t('auth.passwordRequired');
+    } else if (!passwordValid) {
+      newErrors.password = t('validation.passwordRequirements');
     }
 
     if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Пароли не совпадают';
+      newErrors.confirmPassword = t('validation.passwordsMismatch');
     }
 
     setErrors(newErrors);
@@ -80,15 +90,16 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       const response = await registerUser({
         email: formData.email,
         password: formData.password,
+        smartToken: captchaToken,
         isAdmin: formData.isAdmin,
       });
 
       if (response.success) {
         onSuccess?.(response.data);
       } else {
-        setErrors({
-          submit: response.message ?? 'Ошибка регистрации',
-        });
+        const msg = response.message ?? t('auth.registerError');
+        setErrors({ submit: msg });
+        if (msg.toLowerCase().includes('captcha')) setCaptchaToken('');
       }
     } catch (err) {
       const apiError = err as ApiError;
@@ -103,6 +114,7 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         });
       }
       setErrors({ submit: message, ...fieldErrors });
+      if (message.toLowerCase().includes('captcha')) setCaptchaToken('');
     } finally {
       setLoading(false);
     }
@@ -111,46 +123,47 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   return (
     <Card className={styles.card}>
       <form onSubmit={handleSubmit} className={styles.form} noValidate>
-        <h2 className={styles.title}>Регистрация</h2>
-        <p className={styles.subtitle}>
-          Создайте аккаунт для управления карточками товаров
-        </p>
+        <h2 className={styles.title}>{t('auth.registerTitle')}</h2>
+        <p className={styles.subtitle}>{t('auth.registerSubtitle')}</p>
 
         <Input
-          label="Email"
+          label={t('common.email')}
           name="email"
           type="email"
           value={formData.email}
           onChange={handleChange}
-          placeholder="example@mail.com"
+          placeholder={t('placeholders.email')}
           error={errors.email}
           autoComplete="email"
           disabled={loading}
         />
 
         <Input
-          label="Пароль"
+          label={t('common.password')}
           name="password"
           type="password"
           value={formData.password}
           onChange={handleChange}
-          placeholder="Минимум 6 символов"
+          placeholder={t('placeholders.passwordMin')}
           error={errors.password}
           autoComplete="new-password"
           disabled={loading}
         />
+        <PasswordRequirements checks={passwordChecks} />
 
         <Input
-          label="Подтвердите пароль"
+          label={t('auth.confirmPassword')}
           name="confirmPassword"
           type="password"
           value={formData.confirmPassword}
           onChange={handleChange}
-          placeholder="Повторите пароль"
+          placeholder={t('placeholders.repeatPassword')}
           error={errors.confirmPassword}
           autoComplete="new-password"
           disabled={loading}
         />
+
+        <CaptchaWidget onSuccess={setCaptchaToken} />
 
         {errors.submit && (
           <div className={styles.submitError} role="alert">
@@ -158,14 +171,25 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
           </div>
         )}
 
-        <Button type="submit" fullWidth loading={loading} disabled={loading}>
-          Зарегистрироваться
+        <Button
+          type="submit"
+          fullWidth
+          loading={loading}
+          disabled={
+            loading ||
+            !passwordValid ||
+            formData.password !== formData.confirmPassword ||
+            !formData.email.trim() ||
+            !captchaToken
+          }
+        >
+          {t('common.register')}
         </Button>
 
         <p className={styles.footer}>
-          Уже есть аккаунт?{' '}
+          {t('auth.hasAccount')}{' '}
           <Link to="/login" className={styles.link}>
-            Войти
+            {t('common.login')}
           </Link>
         </p>
       </form>

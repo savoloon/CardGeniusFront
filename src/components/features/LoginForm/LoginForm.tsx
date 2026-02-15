@@ -6,6 +6,7 @@ import {
   type LoginResponse,
   type ApiError,
 } from '../../../services/api';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import styles from './LoginForm.module.css';
 
 interface FormData {
@@ -24,6 +25,7 @@ interface LoginFormProps {
 }
 
 export default function LoginForm({ onSuccess }: LoginFormProps) {
+  const { t } = useLanguage();
   const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
@@ -44,13 +46,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
     const newErrors: FormErrors = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email обязателен';
+      newErrors.email = t('auth.emailRequired');
     } else if (!/^\S+@\S+\.\S+$/.test(formData.email)) {
-      newErrors.email = 'Введите корректный email';
+      newErrors.email = t('auth.emailInvalid');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Пароль обязателен';
+      newErrors.password = t('auth.passwordRequired');
     }
 
     setErrors(newErrors);
@@ -75,7 +77,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         onSuccess?.(response.data);
       } else {
         setErrors({
-          submit: response.message ?? 'Ошибка входа',
+          submit: response.message ?? t('auth.loginError'),
         });
       }
     } catch (err) {
@@ -83,7 +85,7 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
       const message =
         apiError.response?.data?.message ??
         apiError.response?.data?.errors?.[0]?.message ??
-        'Ошибка подключения к серверу';
+        t('auth.connectionError');
       const fieldErrors: FormErrors = {};
       if (apiError.response?.data?.errors) {
         apiError.response.data.errors.forEach((e) => {
@@ -99,30 +101,28 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
   return (
     <Card className={styles.card}>
       <form onSubmit={handleSubmit} className={styles.form} noValidate>
-        <h2 className={styles.title}>Вход</h2>
-        <p className={styles.subtitle}>
-          Войдите в аккаунт для управления карточками товаров
-        </p>
+        <h2 className={styles.title}>{t('auth.loginTitle')}</h2>
+        <p className={styles.subtitle}>{t('auth.loginSubtitle')}</p>
 
         <Input
-          label="Email"
+          label={t('common.email')}
           name="email"
           type="email"
           value={formData.email}
           onChange={handleChange}
-          placeholder="example@mail.com"
+          placeholder={t('placeholders.email')}
           error={errors.email}
           autoComplete="email"
           disabled={loading}
         />
 
         <Input
-          label="Пароль"
+          label={t('common.password')}
           name="password"
           type="password"
           value={formData.password}
           onChange={handleChange}
-          placeholder="Введите пароль"
+          placeholder={t('placeholders.password')}
           error={errors.password}
           autoComplete="current-password"
           disabled={loading}
@@ -135,13 +135,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         )}
 
         <Button type="submit" fullWidth loading={loading} disabled={loading}>
-          Войти
+          {t('common.login')}
         </Button>
 
         <p className={styles.footer}>
-          Нет аккаунта?{' '}
+          {t('auth.noAccount')}{' '}
           <Link to="/register" className={styles.link}>
-            Зарегистрироваться
+            {t('common.register')}
           </Link>
         </p>
       </form>

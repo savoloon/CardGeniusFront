@@ -7,9 +7,20 @@
 
 .header {
   padding: 2rem 1.5rem;
-  text-align: center;
   background: var(--color-bg-elevated);
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] .header {
+  border-bottom-color: rgba(0, 0, 0, 0.08);
+}
+
+.headerRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
 }
 
 .logoLink {

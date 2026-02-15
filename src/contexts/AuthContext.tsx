@@ -9,6 +9,7 @@ import {
 import {
   refreshTokens,
   logoutUser,
+  setSessionExpiredHandler,
   type ApiUser,
 } from '../services/api';
 
@@ -16,6 +17,7 @@ interface AuthContextType {
   user: ApiUser | null;
   loading: boolean;
   isAuthenticated: boolean;
+  setUserFromLogin: (data: { user: ApiUser }) => void;
   logout: () => Promise<void>;
   refresh: () => Promise<boolean>;
 }
@@ -42,6 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    setSessionExpiredHandler(() => setUser(null));
+    return () => setSessionExpiredHandler(null);
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
 
     async function init() {
@@ -62,6 +69,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [refresh]);
 
+  const setUserFromLogin = useCallback((data: { user: ApiUser }) => {
+    setUser(data.user);
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       await logoutUser();
@@ -74,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     user,
     loading,
     isAuthenticated: !!user,
+    setUserFromLogin,
     logout,
     refresh,
   };
