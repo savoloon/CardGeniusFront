@@ -177,16 +177,21 @@ export interface AdminUser {
   id: number;
   email: string;
   isAdmin: boolean;
+  planId: number | null;
+  planName: string | null;
   createdAt: string;
 }
 
 export interface AdminPlan {
   id: number;
   name: string;
-  price: number;
-  description: string | null;
-  isActive: boolean;
+  priceNew: number;
+  priceOld: number;
+  countByTasks: boolean;
+  limit: number;
+  visible: boolean;
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface AdminUsersResponse {
@@ -199,6 +204,17 @@ export interface AdminPlansResponse {
   data?: { plans: AdminPlan[] };
 }
 
+export interface CreatePlanBody {
+  name: string;
+  priceNew?: number;
+  priceOld?: number;
+  countByTasks?: boolean;
+  limit?: number;
+  visible?: boolean;
+}
+
+export interface UpdatePlanBody extends Partial<CreatePlanBody> {}
+
 export async function getAdminUsers(): Promise<AdminUsersResponse> {
   return request<AdminUsersResponse>('/admin/users');
 }
@@ -207,17 +223,34 @@ export async function getAdminPlans(): Promise<AdminPlansResponse> {
   return request<AdminPlansResponse>('/admin/plans');
 }
 
+export async function createPlan(body: CreatePlanBody): Promise<{ success: boolean; data?: { plan: AdminPlan }; message?: string }> {
+  return request('/admin/plans', { method: 'POST', body: JSON.stringify(body) });
+}
+
+export async function updatePlan(id: number, body: UpdatePlanBody): Promise<{ success: boolean; data?: { plan: AdminPlan }; message?: string }> {
+  return request(`/admin/plans/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+}
+
+export async function deletePlan(id: number): Promise<{ success: boolean; message?: string }> {
+  return request(`/admin/plans/${id}`, { method: 'DELETE' });
+}
+
+export async function setUserPlan(userId: number, planId: number | null): Promise<{ success: boolean; data?: { userId: number; planId: number | null }; message?: string }> {
+  return request(`/admin/users/${userId}/plan`, { method: 'PATCH', body: JSON.stringify({ planId }) });
+}
+
 export type ProcessMode =
   | 'remove_background'
   | 'generate_background'
   | 'generate_exposure'
-  | 'generate_exposure_by_request'
-  | 'improve_image';
+  | 'generate_exposition_by_request'
+  | 'improve_image'
+  | 'generate_infographic';
 
 export interface SubmitProcessResponse {
   success: boolean;
   message?: string;
-  data?: { taskId: string };
+  data?: { taskId: string; taskIds?: string[] };
 }
 
 export interface ProcessStatusResponse {
@@ -232,13 +265,22 @@ export interface ProcessStatusResponse {
 export async function submitProcess(
   image: File,
   mode: ProcessMode,
-  options?: { variants?: number; prompt?: string }
+  options?: {
+    variants?: number;
+    prompt?: string;
+    productName?: string;
+    productDescription?: string;
+  }
 ): Promise<SubmitProcessResponse> {
   const formData = new FormData();
   formData.append('image', image);
   formData.append('mode', mode);
   if (options?.variants) formData.append('variants', String(options.variants));
   if (options?.prompt) formData.append('prompt', options.prompt);
+  if (mode === 'generate_infographic' && options?.productName)
+    formData.append('product_name', options.productName);
+  if (mode === 'generate_infographic' && options?.productDescription)
+    formData.append('product_description', options.productDescription);
 
   const url = `${API_URL}/process`;
   const config: RequestInit = {
@@ -259,8 +301,82 @@ export async function submitProcess(
   return data;
 }
 
+export interface GenerateDescriptionResponse {
+  success: boolean;
+  message?: string;
+  data?: { titles: string[]; descriptions: string[] };
+}
+
+export async function generateDescription(
+  productName: string,
+  productDescription: string,
+  options?: { batchSizeTitle?: number; batchSizeDescription?: number }
+): Promise<GenerateDescriptionResponse> {
+  return request<GenerateDescriptionResponse>('/process/description', {
+    method: 'POST',
+    body: JSON.stringify({
+      product_name: productName,
+      product_description: productDescription,
+      batch_size_title: options?.batchSizeTitle ?? 1,
+      batch_size_description: options?.batchSizeDescription ?? 1,
+    }),
+  });
+}
+
 export async function getProcessStatus(
   taskId: string
 ): Promise<ProcessStatusResponse> {
   return request<ProcessStatusResponse>(`/process/${taskId}`);
+}
+
+// ——— History ———
+
+export interface HistoryItem {
+  id: number;
+  taskId: string;
+  mode: string;
+  status: string;
+  inputImagePath: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HistoryListResponse {
+  success: boolean;
+  data?: { items: HistoryItem[] };
+}
+
+export interface HistoryDetailResponse {
+  success: boolean;
+  data?: HistoryItem & {
+    userId: number;
+    cUserId: number;
+    wUserId: number;
+    inputImageBase64?: string | null;
+  };
+}
+
+export interface HistoryFilters {
+  status?: 'pending' | 'completed' | 'failed' | '';
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export async function getHistory(filters?: HistoryFilters): Promise<HistoryListResponse> {
+  const params = new URLSearchParams();
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.dateFrom) params.set('dateFrom', filters.dateFrom);
+  if (filters?.dateTo) params.set('dateTo', filters.dateTo);
+  const qs = params.toString();
+  return request<HistoryListResponse>(qs ? `/history?${qs}` : '/history');
+}
+
+export async function getHistoryItem(id: number): Promise<HistoryDetailResponse> {
+  return request<HistoryDetailResponse>(`/history/${id}`);
+}
+
+/** URL для просмотра исходного изображения задачи (с cookies). */
+export function getProcessInputImageUrl(taskId: string): string {
+  const base = import.meta.env.VITE_API_URL || '/api';
+  return `${base}/process/${taskId}/input-image`;
 }

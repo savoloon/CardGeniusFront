@@ -1,0 +1,189 @@
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.header {
+  margin-bottom: 1.5rem;
+}
+
+.title {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+.loading,
+.error {
+  margin: 1rem 0;
+  font-size: 0.9375rem;
+  color: var(--color-text-muted);
+}
+
+.error {
+  color: var(--color-error);
+}
+
+.emptyCard {
+  padding: 2rem;
+  text-align: center;
+}
+
+.emptyText {
+  margin: 0 0 1rem;
+  color: var(--color-text-muted);
+}
+
+.link {
+  color: var(--color-primary);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.list li {
+  margin-bottom: 0.75rem;
+}
+
+.cardLink {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.card {
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.cardLink:hover .card {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.cardLink:active .card {
+  transform: scale(0.99);
+}
+
+/* Filters — theme-aware */
+.filtersCard {
+  margin-bottom: 1.5rem;
+}
+
+.filtersRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.filterLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.filterLabelText {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.select,
+.dateInput {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-bg-input);
+  border-radius: var(--radius-md);
+  min-width: 140px;
+}
+
+.select:focus,
+.dateInput:focus {
+  outline: none;
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-muted);
+}
+
+.select:hover,
+.dateInput:hover {
+  border-color: var(--color-text-dim);
+}
+
+.dateInput {
+  min-width: 160px;
+}
+
+.filtersActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.linkButton {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--color-primary, var(--color-accent));
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.linkButton:hover {
+  text-decoration: underline;
+}
+
+.row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+}
+
+.mode {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.status {
+  font-size: 0.8125rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-input);
+  color: var(--color-text-muted);
+}
+
+.status[data-status="completed"] {
+  background: var(--color-success-bg);
+  color: var(--color-success-text);
+}
+
+.status[data-status="failed"] {
+  background: var(--color-failed-bg);
+  color: var(--color-failed-text);
+}
+
+.date {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}

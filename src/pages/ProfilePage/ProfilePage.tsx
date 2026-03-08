@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { Card, Button, Input, PasswordRequirements } from '../../components/ui';
@@ -102,6 +103,9 @@ export default function ProfilePage() {
       <header className={styles.header}>
         <h1 className={styles.title}>{t('profile.title')}</h1>
         <p className={styles.subtitle}>{t('profile.subtitle')}</p>
+        <Link to="/history" className={styles.historyLink}>
+          <Button variant="outline">{t('history.title')}</Button>
+        </Link>
       </header>
 
       <Card className={styles.section}>

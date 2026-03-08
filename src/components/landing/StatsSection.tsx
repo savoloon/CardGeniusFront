@@ -1,23 +1,21 @@
 import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { useLanguage } from '../../contexts/LanguageContext';
 import styles from './StatsSection.module.css';
 
-const STATS = [
-  { value: '50K+', label: 'Обработано изображений' },
-  { value: '2 мин', label: 'Среднее время на карточку' },
-  { value: '+47%', label: 'Рост конверсии в среднем' },
-  { value: '24', label: 'Бесплатных генераций' },
-];
+const STAT_KEYS = ['statsProcessed', 'statsAvgTime', 'statsConversion', 'statsFreeGen'] as const;
+const STAT_VALUES = ['50K+', '2 мин', '+47%', '24'];
 
 export default function StatsSection() {
   const { ref, isVisible } = useScrollReveal<HTMLElement>();
+  const { t } = useLanguage();
 
   return (
     <section className={styles.section} ref={ref}>
       <div className={`${styles.content} ${isVisible ? styles.visible : ''}`}>
-        {STATS.map((stat, index) => (
-          <div key={index} className={styles.stat} style={{ animationDelay: `${index * 0.1}s` }}>
-            <span className={styles.value}>{stat.value}</span>
-            <span className={styles.label}>{stat.label}</span>
+        {STAT_KEYS.map((key, index) => (
+          <div key={key} className={styles.stat} style={{ animationDelay: `${index * 0.1}s` }}>
+            <span className={styles.value}>{STAT_VALUES[index]}</span>
+            <span className={styles.label}>{t(`landing.${key}`)}</span>
           </div>
         ))}
       </div>

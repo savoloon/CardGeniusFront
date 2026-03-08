@@ -50,6 +50,10 @@
   transition: all var(--transition-base);
 }
 
+[data-theme="light"] .card {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
 .card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-soft);
@@ -124,4 +128,15 @@
 
 .cta {
   width: 100%;
+}
+
+@media (max-width: 480px) {
+  .section {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .cta {
+    min-height: 48px;
+  }
 }

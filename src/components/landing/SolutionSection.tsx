@@ -1,22 +1,11 @@
 import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { useLanguage } from '../../contexts/LanguageContext';
 import styles from './SolutionSection.module.css';
 
-const STEPS = [
-  {
-    num: '01',
-    title: 'Загрузите',
-    desc: 'Сфотографируйте товар на любом фоне - даже на полу или диване. Никакой студии не нужно.',
-  },
-  {
-    num: '02',
-    title: 'Выберите волшебство',
-    desc: 'Удалите фон, поместите в интерьер, наденьте на модель, добавьте инфографику. Всё в один клик.',
-  },
-  {
-    num: '03',
-    title: 'Качайте и выигрывайте',
-    desc: 'Получите десятки готовых вариантов за минуты. Экспортируйте в PNG и заливайте на маркетплейс.',
-  },
+const STEP_KEYS = [
+  { num: '01', titleKey: 'solutionStep1Title', descKey: 'solutionStep1Desc' },
+  { num: '02', titleKey: 'solutionStep2Title', descKey: 'solutionStep2Desc' },
+  { num: '03', titleKey: 'solutionStep3Title', descKey: 'solutionStep3Desc' },
 ];
 
 /* Визуалы для шагов — примеры результата */
@@ -28,30 +17,31 @@ const STEP_IMAGES = [
 
 export default function SolutionSection() {
   const { ref, isVisible } = useScrollReveal<HTMLElement>();
+  const { t } = useLanguage();
 
   return (
     <section className={styles.section} id="how-it-works" ref={ref}>
       <div className={`${styles.header} ${isVisible ? styles.visible : ''}`}>
-        <span className={styles.eyebrow}>Всё гениальное - просто</span>
-        <h2>3 шага к идеальной карточке</h2>
+        <span className={styles.eyebrow}>{t('landing.solutionEyebrow')}</span>
+        <h2>{t('landing.solutionTitle')}</h2>
       </div>
 
       <div className={styles.steps}>
-        {STEPS.map((step, index) => (
+        {STEP_KEYS.map((step, index) => (
           <div
-            key={index}
+            key={step.titleKey}
             className={`${styles.step} ${isVisible ? styles.visible : ''}`}
             style={{ animationDelay: `${index * 0.15}s` }}
           >
             <div className={styles.stepVisual}>
-              <img src={STEP_IMAGES[index]} alt={step.title} />
+              <img src={STEP_IMAGES[index]} alt={t(`landing.${step.titleKey}`)} />
               <div className={styles.stepNum}>{step.num}</div>
             </div>
             <div className={styles.stepContent}>
-              <h3 className={styles.stepTitle}>{step.title}</h3>
-              <p className={styles.stepDesc}>{step.desc}</p>
+              <h3 className={styles.stepTitle}>{t(`landing.${step.titleKey}`)}</h3>
+              <p className={styles.stepDesc}>{t(`landing.${step.descKey}`)}</p>
             </div>
-            {index < STEPS.length - 1 && (
+            {index < STEP_KEYS.length - 1 && (
               <div className={styles.connector} aria-hidden="true" />
             )}
           </div>

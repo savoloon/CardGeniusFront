@@ -74,6 +74,17 @@
   color: #fff;
 }
 
+[data-theme="light"] .outline {
+  color: var(--color-text);
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="light"] .outline:hover:not(:disabled) {
+  background: rgba(99, 102, 241, 0.08);
+  border-color: var(--color-accent);
+  color: var(--color-accent-hover, #4f46e5);
+}
+
 .spinner {
   width: 1.25rem;
   height: 1.25rem;

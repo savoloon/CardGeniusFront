@@ -4,21 +4,20 @@ import { Button } from '../ui';
 import { useLanguage } from '../../contexts/LanguageContext';
 import styles from './HeroSection.module.css';
 
+const SLIDER_KEYS = ['heroSliderAlt1', 'heroSliderAlt2', 'heroSliderAlt3'] as const;
+
 const SLIDER_ITEMS = [
   {
     before: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=400&fit=crop',
     after: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=400&fit=crop',
-    alt: 'Часы: скучное фото → стильный лукбук',
   },
   {
     before: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&h=400&fit=crop',
     after: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop',
-    alt: 'Обувь: базовая съёмка → продающий визуал',
   },
   {
     before: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&h=400&fit=crop',
     after: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=600&h=400&fit=crop',
-    alt: 'Электроника: стол → контекстное использование',
   },
 ];
 
@@ -71,16 +70,16 @@ export default function HeroSection() {
             >
               <div className={styles.beforeAfter}>
                 <div className={styles.before}>
-                  <img src={item.before} alt={`До: ${item.alt}`} />
-                  <span className={styles.label}>До</span>
+                  <img src={item.before} alt={`${t('landing.heroBefore')}: ${t(`landing.${SLIDER_KEYS[index]}`)}`} />
+                  <span className={styles.label}>{t('landing.heroBefore')}</span>
                 </div>
                 <div className={styles.arrow}>
                   <span className={styles.arrowIcon}>→</span>
                   <span className={styles.arrowPulse} />
                 </div>
                 <div className={styles.after}>
-                  <img src={item.after} alt={`После: ${item.alt}`} />
-                  <span className={styles.label}>После</span>
+                  <img src={item.after} alt={`${t('landing.heroAfter')}: ${t(`landing.${SLIDER_KEYS[index]}`)}`} />
+                  <span className={styles.label}>{t('landing.heroAfter')}</span>
                 </div>
               </div>
             </div>
@@ -93,7 +92,7 @@ export default function HeroSection() {
               type="button"
               className={`${styles.dot} ${index === activeSlide ? styles.dotActive : ''}`}
               onClick={() => setActiveSlide(index)}
-              aria-label={`Слайд ${index + 1}`}
+              aria-label={t('landing.heroSlide', { n: index + 1 })}
             />
           ))}
         </div>

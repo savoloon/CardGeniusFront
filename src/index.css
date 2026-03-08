@@ -33,6 +33,14 @@
   /* Альтернативный акцент (циан) */
   --color-cyan: #00c6bf;
 
+  /* Семантика: успех / ошибка (для статусов и сообщений) */
+  --color-error: #fca5a5;
+  --color-success: #6ee7b7;
+  --color-success-text: #059669;
+  --color-failed-text: #dc2626;
+  --color-failed-bg: rgba(252, 165, 165, 0.2);
+  --color-success-bg: rgba(110, 231, 183, 0.2);
+
   /* Типографика */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'Manrope', 'Inter', sans-serif;
@@ -70,6 +78,13 @@
   --color-accent-hover: #4f46e5;
   --color-accent-muted: rgba(99, 102, 241, 0.12);
   --color-accent-glow: rgba(99, 102, 241, 0.35);
+
+  --color-error: #dc2626;
+  --color-success: #16a34a;
+  --color-success-text: #15803d;
+  --color-failed-text: #b91c1c;
+  --color-failed-bg: rgba(220, 38, 38, 0.1);
+  --color-success-bg: rgba(22, 163, 74, 0.12);
 
   --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.06);
   --shadow-card: 0 8px 32px rgba(0, 0, 0, 0.08);

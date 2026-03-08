@@ -1,4 +1,5 @@
 import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { useLanguage } from '../../contexts/LanguageContext';
 import styles from './TrustSection.module.css';
 
 const MARKETPLACES = [
@@ -11,41 +12,22 @@ const MARKETPLACES = [
   { name: 'eBay', color: '#0064d2' },
 ];
 
-const TESTIMONIALS = [
-  {
-    quote: 'С Card Genius мы запускаем новые карточки в 5 раз быстрее. Раньше ждали дизайнера неделю — теперь получаем десятки вариантов за час. Конверсия выросла на 40%.',
-    name: 'Алексей М.',
-    role: 'Селлер на Wildberries, товары для дома',
-    avatar: 'А',
-  },
-  {
-    quote: 'Пакетная обработка спасла нас при загрузке нового каталога. 200 фото обработали за вечер. Раньше бы ушла неделя на ретушь.',
-    name: 'Мария К.',
-    role: 'Владелица бренда одежды',
-    avatar: 'М',
-  },
-  {
-    quote: 'Удаление фона в один клик — это магия. Раньше вырезали в Photoshop по часу на каждое фото. Теперь за минуту получаем чистый PNG для всех карточек.',
-    name: 'Дмитрий В.',
-    role: 'Продавец электроники на Ozon',
-    avatar: 'Д',
-  },
-  {
-    quote: 'Попробовали бесплатно — зацепило. Оформили Pro и не жалеем. Карточки выглядят как у крупных брендов, а бюджет в разы меньше.',
-    name: 'Елена С.',
-    role: 'Маркетолог, интернет-магазин',
-    avatar: 'Е',
-  },
+const TESTIMONIAL_KEYS = [
+  { quoteKey: 'trust1', nameKey: 'trust1Name', roleKey: 'trust1Role', avatar: 'А' },
+  { quoteKey: 'trust2', nameKey: 'trust2Name', roleKey: 'trust2Role', avatar: 'М' },
+  { quoteKey: 'trust3', nameKey: 'trust3Name', roleKey: 'trust3Role', avatar: 'Д' },
+  { quoteKey: 'trust4', nameKey: 'trust4Name', roleKey: 'trust4Role', avatar: 'Е' },
 ];
 
 export default function TrustSection() {
   const { ref, isVisible } = useScrollReveal<HTMLElement>();
+  const { t } = useLanguage();
 
   return (
     <section className={styles.section} ref={ref}>
       <div className={`${styles.header} ${isVisible ? styles.visible : ''}`}>
-        <span className={styles.eyebrow}>Нам доверяют</span>
-        <h2>Card Genius AI выбирают те, кто продаёт больше</h2>
+        <span className={styles.eyebrow}>{t('landing.trustEyebrow')}</span>
+        <h2>{t('landing.trustTitle')}</h2>
       </div>
 
       <div className={styles.marqueeWrap}>
@@ -63,21 +45,21 @@ export default function TrustSection() {
           </div>
         </div>
       </div>
-      <p className={styles.badge}>Первые 100+ селлеров уже с нами</p>
+      <p className={styles.badge}>{t('landing.trustBadge')}</p>
 
       <div className={styles.testimonials}>
-        {TESTIMONIALS.map((t, i) => (
+        {TESTIMONIAL_KEYS.map((item, i) => (
           <div
-            key={i}
+            key={item.quoteKey}
             className={`${styles.testimonial} ${isVisible ? styles.visible : ''}`}
             style={{ animationDelay: `${i * 0.1}s` }}
           >
-            <div className={styles.quote}>«{t.quote}»</div>
+            <div className={styles.quote}>«{t(`landing.${item.quoteKey}`)}»</div>
             <div className={styles.author}>
-              <div className={styles.avatar}>{t.avatar}</div>
+              <div className={styles.avatar}>{item.avatar}</div>
               <div>
-                <strong>{t.name}</strong>
-                <span>{t.role}</span>
+                <strong>{t(`landing.${item.nameKey}`)}</strong>
+                <span>{t(`landing.${item.roleKey}`)}</span>
               </div>
             </div>
           </div>

@@ -20,6 +20,12 @@
   color: var(--color-text-muted);
 }
 
+.historyLink {
+  display: inline-block;
+  margin-top: 1rem;
+  text-decoration: none;
+}
+
 .section {
   margin-bottom: 1.5rem;
 }

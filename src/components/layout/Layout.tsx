@@ -13,17 +13,19 @@ export default function Layout({ children }: LayoutProps) {
   return (
     <div className={styles.layout}>
       <header className={styles.header}>
-        <div className={styles.headerRow}>
-          <Link to="/" className={styles.logoLink}>
-            <h1 className={styles.logo}>
+        <div className={styles.headerInner}>
+          <div className={styles.headerLeft}>
+            <Link to="/" className={styles.logoLink}>
               <span className={styles.logoIcon}>◇</span>
-              Card Genius AI
-            </h1>
-          </Link>
-          <ThemeToggle />
-          <LanguageToggle />
+              <h1 className={styles.logo}>Card Genius AI</h1>
+            </Link>
+            <p className={styles.tagline}>{t('layout.tagline')}</p>
+          </div>
+          <div className={styles.headerRight}>
+            <ThemeToggle />
+            <LanguageToggle />
+          </div>
         </div>
-        <p className={styles.tagline}>{t('layout.tagline')}</p>
       </header>
       <main className={styles.main}>{children}</main>
     </div>

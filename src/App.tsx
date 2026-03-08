@@ -10,6 +10,8 @@ import LoginPage from './pages/LoginPage/LoginPage';
 import DashboardPage from './pages/DashboardPage/DashboardPage';
 import AdminPage from './pages/AdminPage/AdminPage';
 import ProfilePage from './pages/ProfilePage/ProfilePage';
+import HistoryPage from './pages/HistoryPage/HistoryPage';
+import HistoryDetailPage from './pages/HistoryDetailPage/HistoryDetailPage';
 import Layout from './components/layout/Layout';
 import DashboardLayout from './components/layout/DashboardLayout';
 
@@ -53,6 +55,26 @@ function App() {
               <ProtectedRoute>
                 <DashboardLayout>
                   <ProfilePage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <HistoryPage />
+                </DashboardLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/history/:id"
+            element={
+              <ProtectedRoute>
+                <DashboardLayout>
+                  <HistoryDetailPage />
                 </DashboardLayout>
               </ProtectedRoute>
             }

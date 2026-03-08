@@ -79,6 +79,13 @@
   animation: fadeUp 0.8s var(--ease-default) 0.3s backwards;
 }
 
+[data-theme="light"] .title {
+  background: linear-gradient(135deg, #1e293b 0%, #4f46e5 50%, #6366f1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
 .subtitle {
   font-size: 1.125rem;
   color: var(--color-text-muted);
@@ -135,10 +142,19 @@
   transition: all var(--transition-base);
 }
 
+[data-theme="light"] .secondaryCta {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
 .secondaryCta:hover {
   color: var(--color-text);
   border-color: rgba(255, 255, 255, 0.3);
   background: rgba(255, 255, 255, 0.05);
+}
+
+[data-theme="light"] .secondaryCta:hover {
+  border-color: rgba(0, 0, 0, 0.25);
+  background: rgba(99, 102, 241, 0.06);
 }
 
 .playIcon {
@@ -170,6 +186,10 @@
   background: var(--color-bg-card);
   box-shadow: var(--shadow-card), 0 0 0 1px rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .slider {
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 .slide {
@@ -235,6 +255,7 @@
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
   font-weight: 600;
+  color: #fff;
   background: rgba(0, 0, 0, 0.75);
   border-radius: 4px;
 }
@@ -291,12 +312,49 @@
   transition: all var(--transition-fast);
 }
 
+[data-theme="light"] .dot {
+  background: rgba(0, 0, 0, 0.2);
+}
+
 .dot:hover {
   background: rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="light"] .dot:hover {
+  background: rgba(0, 0, 0, 0.35);
 }
 
 .dotActive {
   width: 28px;
   border-radius: 4px;
   background: var(--gradient-ai);
+}
+
+/* Touch-friendly on mobile */
+@media (max-width: 480px) {
+  .hero {
+    padding: clamp(4rem, 8vw, 5rem) 1rem clamp(2rem, 4vw, 3rem);
+  }
+
+  .actions {
+    flex-direction: column;
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .primaryCta,
+  .secondaryCta {
+    justify-content: center;
+    min-height: 48px;
+  }
+
+  .slide {
+    padding: 1rem;
+  }
+
+  .dots .dot {
+    padding: 12px;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }

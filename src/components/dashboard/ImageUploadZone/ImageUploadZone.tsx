@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import styles from './ImageUploadZone.module.css';
 
 interface ImageUploadZoneProps {
@@ -19,6 +20,7 @@ export default function ImageUploadZone({
   onClear,
   disabled,
 }: ImageUploadZoneProps) {
+  const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleFile = useCallback(
@@ -63,7 +65,7 @@ export default function ImageUploadZone({
         role="button"
         tabIndex={0}
         onKeyDown={(e) => e.key === 'Enter' && handleClick()}
-        aria-label="Загрузить изображение"
+        aria-label={t('dashboard.uploadAria')}
       >
         <input
           ref={inputRef}
@@ -75,16 +77,16 @@ export default function ImageUploadZone({
         />
         {previewUrl ? (
           <div className={styles.preview}>
-            <img src={previewUrl} alt="Превью" />
+            <img src={previewUrl} alt={t('dashboard.uploadPreview')} />
             {!disabled && (
-              <span className={styles.hint}>Нажмите или перетащите для замены</span>
+              <span className={styles.hint}>{t('dashboard.uploadHint')}</span>
             )}
           </div>
         ) : (
           <div className={styles.placeholder}>
             <span className={styles.icon}>↗</span>
-            <span className={styles.text}>Загрузить изображение</span>
-            <span className={styles.sub}>JPEG, PNG, WebP до 10 МБ</span>
+            <span className={styles.text}>{t('dashboard.uploadImage')}</span>
+            <span className={styles.sub}>{t('dashboard.uploadFormats')}</span>
           </div>
         )}
       </div>
@@ -97,7 +99,7 @@ export default function ImageUploadZone({
             onClear();
           }}
         >
-          Удалить
+          {t('dashboard.clear')}
         </button>
       )}
     </div>

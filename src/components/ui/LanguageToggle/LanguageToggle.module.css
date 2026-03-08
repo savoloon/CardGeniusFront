@@ -2,7 +2,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.5rem;
+  min-width: 44px;
+  min-height: 44px;
   height: 2.5rem;
   padding: 0 0.5rem;
   border: none;

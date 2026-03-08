@@ -2,48 +2,46 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '../ui';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { useLanguage } from '../../contexts/LanguageContext';
 import styles from './FinalCTASection.module.css';
 
-const GUARANTEES = [
-  { icon: '🛡️', text: 'Без риска' },
-  { icon: '🔒', text: 'Данные в безопасности' },
-  { icon: '↩️', text: 'Отмена в любой момент' },
+const GUARANTEE_KEYS = [
+  { icon: '🛡️', key: 'ctaGuarantee1' },
+  { icon: '🔒', key: 'ctaGuarantee2' },
+  { icon: '↩️', key: 'ctaGuarantee3' },
 ];
 
 export default function FinalCTASection() {
   const [email, setEmail] = useState('');
   const { ref, isVisible } = useScrollReveal<HTMLElement>();
+  const { t } = useLanguage();
 
   return (
     <section className={styles.section} ref={ref}>
       <div className={`${styles.content} ${isVisible ? styles.visible : ''}`}>
-        <h2 className={styles.title}>
-          Попробуйте Card Genius AI прямо сейчас
-        </h2>
-        <p className={styles.subtitle}>
-          Первые 24 генерации - бесплатно. Никакой привязки карты.
-        </p>
+        <h2 className={styles.title}>{t('landing.ctaTitle')}</h2>
+        <p className={styles.subtitle}>{t('landing.ctaSubtitle')}</p>
 
         <form className={styles.form} onSubmit={(e) => e.preventDefault()}>
           <input
             type="email"
-            placeholder="Ваш email"
+            placeholder={t('landing.ctaPlaceholder')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className={styles.input}
           />
           <Link to="/register">
             <Button type="button" variant="primary" className={styles.cta}>
-              Создать карточку бесплатно
+              {t('landing.ctaButton')}
             </Button>
           </Link>
         </form>
 
         <div className={styles.guarantees}>
-          {GUARANTEES.map((g, i) => (
-            <span key={i} className={styles.guarantee}>
+          {GUARANTEE_KEYS.map((g) => (
+            <span key={g.key} className={styles.guarantee}>
               <span className={styles.gIcon}>{g.icon}</span>
-              {g.text}
+              {t(`landing.${g.key}`)}
             </span>
           ))}
         </div>

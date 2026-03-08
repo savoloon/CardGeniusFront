@@ -74,6 +74,10 @@
   animation: cardReveal 0.6s var(--ease-default) forwards;
 }
 
+[data-theme="light"] .card {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
 .grid.visible .card {
   animation: cardReveal 0.6s var(--ease-default) forwards;
 }
@@ -83,6 +87,11 @@
   box-shadow: var(--shadow-soft);
   border-color: rgba(255, 255, 255, 0.1);
   background: rgba(26, 29, 38, 0.9);
+}
+
+[data-theme="light"] .card:hover {
+  border-color: rgba(0, 0, 0, 0.12);
+  background: var(--color-bg-card);
 }
 
 @keyframes cardReveal {

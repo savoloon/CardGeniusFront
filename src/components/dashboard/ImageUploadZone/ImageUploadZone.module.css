@@ -8,6 +8,10 @@
   min-height: 220px;
   border-radius: var(--radius-lg);
   border: 2px dashed rgba(255, 255, 255, 0.15);
+}
+
+[data-theme="light"] .zone {
+  border-color: rgba(0, 0, 0, 0.15);
   background: var(--color-bg-input);
   display: flex;
   align-items: center;
@@ -25,6 +29,10 @@
   border-style: solid;
   border-color: rgba(255, 255, 255, 0.08);
   padding: 0.5rem;
+}
+
+[data-theme="light"] .zone.zoneFilled {
+  border-color: rgba(0, 0, 0, 0.08);
 }
 
 .zone.disabled {

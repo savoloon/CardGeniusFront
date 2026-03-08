@@ -59,7 +59,7 @@ export default function LandingHeader() {
             type="button"
             className={styles.menuToggle}
             onClick={() => setMenuOpen(!menuOpen)}
-            aria-label="Меню"
+            aria-label={t('landing.menuAria')}
           >
             <span />
             <span />

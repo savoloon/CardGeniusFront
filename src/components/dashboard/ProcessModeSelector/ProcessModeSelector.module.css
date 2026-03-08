@@ -4,10 +4,17 @@
   gap: 0.75rem;
 }
 
-.label {
+.sectionTitle {
+  margin: 0;
   font-size: 0.9375rem;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--color-text);
+}
+
+.label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
 }
 
 .grid {
@@ -17,17 +24,20 @@
 }
 
 .option {
-  padding: 0.875rem 1rem;
+  padding: 0.75rem 1rem;
   font-size: 0.9375rem;
   font-family: inherit;
   text-align: left;
   color: var(--color-text-muted);
   background: var(--color-bg-input);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 2px solid transparent;
   border-radius: var(--radius-md);
   cursor: pointer;
-  transition: border-color var(--transition-fast), color var(--transition-fast),
-    background var(--transition-fast);
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+[data-theme="light"] .option {
+  border-color: rgba(0, 0, 0, 0.1);
 }
 
 .option:hover:not(:disabled) {
@@ -35,10 +45,15 @@
   color: var(--color-text);
 }
 
+[data-theme="light"] .option:hover:not(:disabled) {
+  border-color: rgba(0, 0, 0, 0.2);
+}
+
 .option.active {
   border-color: var(--color-accent);
   color: var(--color-text);
   background: var(--color-accent-muted);
+  font-weight: 500;
 }
 
 .option:disabled {

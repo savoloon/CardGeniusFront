@@ -1,3 +1,4 @@
+import { useLanguage } from '../../../contexts/LanguageContext';
 import styles from './ProcessResults.module.css';
 
 interface ProcessResultsProps {
@@ -6,6 +7,7 @@ interface ProcessResultsProps {
 }
 
 export default function ProcessResults({ images, onDownload }: ProcessResultsProps) {
+  const { t } = useLanguage();
   if (images.length === 0) return null;
 
   const handleDownload = (url: string, index: number) => {
@@ -21,17 +23,19 @@ export default function ProcessResults({ images, onDownload }: ProcessResultsPro
 
   return (
     <div className={styles.wrapper}>
-      <h3 className={styles.title}>Результат</h3>
+      <h3 className={styles.title}>{t('dashboard.resultTitle')}</h3>
       <div className={styles.grid}>
         {images.map((url, i) => (
           <div key={i} className={styles.item}>
-            <img src={url} alt={`Результат ${i + 1}`} className={styles.img} />
+            <div className={styles.imgWrap}>
+              <img src={url} alt={t('dashboard.resultAlt', { n: i + 1 })} className={styles.img} />
+            </div>
             <button
               type="button"
               className={styles.downloadBtn}
               onClick={() => handleDownload(url, i)}
             >
-              Скачать
+              {t('dashboard.download')}
             </button>
           </div>
         ))}

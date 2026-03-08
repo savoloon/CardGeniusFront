@@ -27,6 +27,11 @@
   transition: all var(--transition-base);
 }
 
+[data-theme="light"] .stat {
+  background: rgba(0, 0, 0, 0.02);
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
 .stat:hover {
   background: rgba(99, 102, 241, 0.08);
   border-color: rgba(99, 102, 241, 0.2);

@@ -56,6 +56,13 @@
   }
 }
 
+@media (max-width: 480px) {
+  .input,
+  .cta {
+    min-height: 48px;
+  }
+}
+
 .input {
   flex: 1;
   padding: 0.875rem 1.25rem;
@@ -66,6 +73,10 @@
   border: 2px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--radius-md);
   transition: border-color var(--transition-fast);
+}
+
+[data-theme="light"] .input {
+  border-color: rgba(0, 0, 0, 0.15);
 }
 
 .input::placeholder {

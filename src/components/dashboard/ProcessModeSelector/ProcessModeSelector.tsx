@@ -1,12 +1,14 @@
 import type { ProcessMode } from '../../../services/api';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import styles from './ProcessModeSelector.module.css';
 
-const MODES: { value: ProcessMode; label: string; short?: string }[] = [
-  { value: 'remove_background', label: 'Удалить фон' },
-  { value: 'generate_background', label: 'Сгенерировать фон', short: 'Фон' },
-  { value: 'generate_exposure', label: 'Сгенерировать экспозицию (подходящую)' },
-  { value: 'generate_exposure_by_request', label: 'Экспозиция по запросу' },
-  { value: 'improve_image', label: 'Улучшить изображение' },
+const MODE_KEYS: { value: ProcessMode; labelKey: string }[] = [
+  { value: 'remove_background', labelKey: 'modeRemoveBg' },
+  { value: 'generate_background', labelKey: 'modeGenerateBg' },
+  { value: 'generate_exposure', labelKey: 'modeGenerateExposure' },
+  { value: 'generate_exposition_by_request', labelKey: 'modeExposureByRequest' },
+  { value: 'improve_image', labelKey: 'modeImprove' },
+  { value: 'generate_infographic', labelKey: 'modeInfographic' },
 ];
 
 interface ProcessModeSelectorProps {
@@ -20,11 +22,13 @@ export default function ProcessModeSelector({
   onChange,
   disabled,
 }: ProcessModeSelectorProps) {
+  const { t } = useLanguage();
   return (
     <div className={styles.wrapper}>
-      <label className={styles.label}>Режим обработки</label>
-      <div className={styles.grid}>
-        {MODES.map((mode) => (
+      <h3 className={styles.sectionTitle}>{t('dashboard.stepMode')}</h3>
+      <label className={styles.label} id="mode-label">{t('dashboard.modeLabel')}</label>
+      <div className={styles.grid} role="group" aria-labelledby="mode-label">
+        {MODE_KEYS.map((mode) => (
           <button
             key={mode.value}
             type="button"
@@ -32,7 +36,7 @@ export default function ProcessModeSelector({
             onClick={() => !disabled && onChange(mode.value)}
             disabled={disabled}
           >
-            {mode.label}
+            {t(`dashboard.${mode.labelKey}`)}
           </button>
         ))}
       </div>

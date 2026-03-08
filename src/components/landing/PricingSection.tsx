@@ -1,73 +1,65 @@
 import { Link } from 'react-router-dom';
 import { Button } from '../ui';
 import { useScrollReveal } from '../../hooks/useScrollReveal';
+import { useLanguage } from '../../contexts/LanguageContext';
 import styles from './PricingSection.module.css';
 
 const PLANS = [
   {
-    name: 'Starter',
+    nameKey: 'planStarter',
     price: '0 ₽',
-    period: 'навсегда',
-    desc: 'Бесплатный старт',
-    features: ['24 генерации бесплатно', 'Базовые инструменты', 'Экспорт в PNG'],
-    cta: 'Попробовать',
+    periodKey: 'planPeriodForever',
+    descKey: 'planStarterDesc',
+    featureKeys: ['planStarterFeatures', 'planStarterFeatures2', 'planStarterFeatures3'],
+    ctaKey: 'planStarterCta',
     highlighted: false,
   },
   {
-    name: 'Pro',
+    nameKey: 'planPro',
     price: '990 ₽',
-    period: '/мес',
-    desc: 'Самый популярный',
-    features: [
-      '200 генераций в месяц',
-      'Все инструменты AI',
-      'Приоритетная обработка',
-      'Поддержка 24/7',
-    ],
-    cta: 'Создать карточку бесплатно',
+    periodKey: 'planPeriodMonth',
+    descKey: 'planProDesc',
+    featureKeys: ['planProFeatures1', 'planProFeatures2', 'planProFeatures3', 'planProFeatures4'],
+    ctaKey: 'planProCta',
     highlighted: true,
   },
   {
-    name: 'Business',
+    nameKey: 'planBusiness',
     price: '2 990 ₽',
-    period: '/мес',
-    desc: 'Для агентств',
-    features: [
-      'Безлимит генераций',
-      'API доступ',
-      'Свои модели',
-      'Выделенный менеджер',
-    ],
-    cta: 'Связаться с нами',
+    periodKey: 'planPeriodMonth',
+    descKey: 'planBusinessDesc',
+    featureKeys: ['planBusinessFeatures1', 'planBusinessFeatures2', 'planBusinessFeatures3', 'planBusinessFeatures4'],
+    ctaKey: 'planBusinessCta',
     highlighted: false,
   },
 ];
 
 export default function PricingSection() {
   const { ref, isVisible } = useScrollReveal<HTMLElement>();
+  const { t } = useLanguage();
 
   return (
     <section className={styles.section} id="pricing" ref={ref}>
       <div className={`${styles.header} ${isVisible ? styles.visible : ''}`}>
-        <h2>Начните с 24 бесплатных генераций. Платите только когда растите.</h2>
+        <h2>{t('landing.pricingTitle')}</h2>
       </div>
 
       <div className={`${styles.grid} ${isVisible ? styles.visible : ''}`}>
         {PLANS.map((plan, i) => (
           <div
-            key={plan.name}
+            key={plan.nameKey}
             className={`${styles.card} ${plan.highlighted ? styles.cardHighlighted : ''}`}
             style={{ animationDelay: `${i * 0.1}s` }}
           >
-            <div className={styles.badge}>{plan.desc}</div>
-            <h3 className={styles.name}>{plan.name}</h3>
+            <div className={styles.badge}>{t(`landing.${plan.descKey}`)}</div>
+            <h3 className={styles.name}>{t(`landing.${plan.nameKey}`)}</h3>
             <div className={styles.price}>
               <span className={styles.priceValue}>{plan.price}</span>
-              <span className={styles.period}>{plan.period}</span>
+              <span className={styles.period}>{t(`landing.${plan.periodKey}`)}</span>
             </div>
             <ul className={styles.features}>
-              {plan.features.map((f, i) => (
-                <li key={i}>{f}</li>
+              {plan.featureKeys.map((key) => (
+                <li key={key}>{t(`landing.${key}`)}</li>
               ))}
             </ul>
             <Link to="/register">
@@ -76,7 +68,7 @@ export default function PricingSection() {
                 fullWidth
                 className={styles.cta}
               >
-                {plan.cta}
+                {t(`landing.${plan.ctaKey}`)}
               </Button>
             </Link>
           </div>

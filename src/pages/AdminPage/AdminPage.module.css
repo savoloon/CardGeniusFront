@@ -1,6 +1,7 @@
 .page {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
+  padding: 0 0.5rem;
 }
 
 .header {
@@ -55,10 +56,24 @@
 
 .tableWrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--color-bg-card);
+}
+
+[data-theme="light"] .tableWrap {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.tableWrapPlans {
+  min-width: 0;
+  margin-top: 0.5rem;
 }
 
 .table {
   width: 100%;
+  min-width: 860px;
   border-collapse: collapse;
   font-size: 0.9375rem;
 }
@@ -70,14 +85,48 @@
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
+[data-theme="light"] .table th,
+[data-theme="light"] .table td {
+  border-bottom-color: rgba(0, 0, 0, 0.06);
+}
+
 .table th {
   font-weight: 600;
   color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.table th:first-child,
+.table td:first-child {
+  padding-left: 1.25rem;
+}
+
+.table th:last-child,
+.table td:last-child {
+  padding-right: 1.25rem;
 }
 
 .table td {
   color: var(--color-text);
 }
+
+/* Колонки таблицы тарифов: фиксируем ширины, чтобы не обрезалось */
+.tableWrapPlans .table th:nth-child(1),
+.tableWrapPlans .table td:nth-child(1) { width: 3rem; }
+.tableWrapPlans .table th:nth-child(2),
+.tableWrapPlans .table td:nth-child(2) { min-width: 120px; }
+.tableWrapPlans .table th:nth-child(3),
+.tableWrapPlans .table td:nth-child(3) { width: 6rem; }
+.tableWrapPlans .table th:nth-child(4),
+.tableWrapPlans .table td:nth-child(4) { width: 6rem; }
+.tableWrapPlans .table th:nth-child(5),
+.tableWrapPlans .table td:nth-child(5) { min-width: 140px; }
+.tableWrapPlans .table th:nth-child(6),
+.tableWrapPlans .table td:nth-child(6) { width: 5rem; }
+.tableWrapPlans .table th:nth-child(7),
+.tableWrapPlans .table td:nth-child(7) { min-width: 100px; }
+.tableWrapPlans .table th:nth-child(8),
+.tableWrapPlans .table td:nth-child(8) { width: 1%; white-space: nowrap; }
 
 .badge {
   display: inline-block;
@@ -108,4 +157,178 @@
   background: rgba(239, 68, 68, 0.1);
   border-radius: var(--radius-md);
   margin-bottom: 1rem;
+}
+
+.planSelect {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg-input);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  min-width: 140px;
+}
+
+.planSelect:focus {
+  outline: none;
+  border-color: var(--color-accent);
+}
+
+.savingHint {
+  margin-left: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.planToolbar {
+  margin-bottom: 1rem;
+}
+
+.planForm {
+  max-width: 520px;
+  padding: 1.75rem;
+  background: var(--color-bg-input);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+[data-theme="light"] .planForm {
+  border-color: rgba(0, 0, 0, 0.08);
+  background: var(--color-bg-card);
+}
+
+.planFormTitle {
+  margin: 0 0 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.planFormRow {
+  display: flex;
+  gap: 1.25rem;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.planFormRow > * {
+  flex: 1;
+  min-width: 120px;
+}
+
+/* Строка «Лимит по» + «Лимит»: селекту и полю лимита — достаточно места */
+.planFormRowCountBy .planFormLabel {
+  min-width: 240px;
+  flex: 1 1 240px;
+}
+
+.planFormRowCountBy .planFormSelect {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.planFormRowCountBy .planFormLimitWrap {
+  min-width: 140px;
+  flex: 0 1 160px;
+}
+
+.planFormLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.planFormSelect {
+  padding: 0.5rem 2rem 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  min-height: 2.5rem;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23999' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+}
+
+[data-theme="light"] .planFormSelect {
+  border-color: rgba(0, 0, 0, 0.15);
+}
+
+.planFormLimitWrap input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.planFormCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.planFormCheckbox input {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex-shrink: 0;
+}
+
+.planFormActions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+  padding-top: 0.25rem;
+}
+
+.actionsCell {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.actionsCell .actionBtn:last-child {
+  margin-right: 0;
+}
+
+.actionBtn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: var(--color-accent);
+  background: transparent;
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.actionBtn:hover {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.actionBtnDanger {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: #fca5a5;
+  background: transparent;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.actionBtnDanger:hover {
+  background: rgba(239, 68, 68, 0.1);
 }

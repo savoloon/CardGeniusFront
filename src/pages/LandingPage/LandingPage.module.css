@@ -9,6 +9,11 @@
   background: rgba(0, 0, 0, 0.2);
 }
 
+[data-theme="light"] .footer {
+  border-top-color: rgba(0, 0, 0, 0.08);
+  background: rgba(0, 0, 0, 0.03);
+}
+
 .footerInner {
   max-width: 1280px;
   margin: 0 auto;
