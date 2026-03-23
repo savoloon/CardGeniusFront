@@ -244,6 +244,12 @@
   border: 1px solid var(--color-border-card, transparent);
 }
 
+.infographicVariantsHint {
+  margin: 1.25rem 0 0.75rem;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+}
+
 [data-theme="light"] .workspaceCard {
   border-color: rgba(0, 0, 0, 0.08);
 }

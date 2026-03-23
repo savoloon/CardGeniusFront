@@ -1,0 +1,264 @@
+.root {
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+  gap: 1.5rem;
+  align-items: start;
+  width: 100%;
+  max-width: 100%;
+}
+
+.aside {
+  padding: 1rem;
+  background: var(--color-bg-input);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .aside {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.asideTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.asideHint {
+  margin: 0 0 1rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  line-height: 1.45;
+}
+
+.recommendedList {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.recommendedItem {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--color-bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.recommendedText {
+  font-size: 0.875rem;
+  line-height: 1.4;
+  color: var(--color-text);
+  cursor: grab;
+}
+
+.recommendedText:active {
+  cursor: grabbing;
+}
+
+.placeBtn {
+  align-self: flex-start;
+  font-size: 0.8125rem !important;
+  padding: 0.35rem 0.65rem !important;
+}
+
+.addBtn {
+  width: 100%;
+}
+
+.workspace {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.canvas {
+  position: relative;
+  display: inline-block;
+  max-width: 100%;
+  border-radius: var(--radius-md);
+  overflow: visible;
+  line-height: 0;
+  align-self: center;
+}
+
+.canvasImg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  vertical-align: top;
+  border-radius: var(--radius-md);
+  user-select: none;
+  pointer-events: none;
+}
+
+.layer {
+  position: absolute;
+  max-width: min(90%, 400px);
+  padding: 0.25rem 0.35rem;
+  border: 2px dashed transparent;
+  cursor: default;
+  outline: none;
+}
+
+.layerSelected {
+  border-color: var(--color-accent);
+  border-style: solid;
+}
+
+.dragHandle {
+  position: absolute;
+  left: -1.75rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.5rem;
+  height: 2rem;
+  padding: 0;
+  font-size: 0.65rem;
+  line-height: 1;
+  color: var(--color-text-muted);
+  background: var(--color-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  cursor: grab;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dragHandle:active {
+  cursor: grabbing;
+}
+
+.layerText {
+  min-width: 6rem;
+  min-height: 2.5rem;
+  max-width: 22rem;
+  padding: 0.35rem 0.5rem;
+  outline: none;
+  word-break: break-word;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: var(--radius-sm);
+  resize: both;
+  font-family: inherit;
+  line-height: 1.35;
+}
+
+[data-theme='dark'] .layerText {
+  background: rgba(30, 30, 35, 0.92);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: inherit;
+}
+
+.removeLayer {
+  position: absolute;
+  right: -0.5rem;
+  top: -0.5rem;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  font-size: 1.1rem;
+  line-height: 1;
+  color: #fff;
+  background: rgba(239, 68, 68, 0.9);
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1rem;
+  padding: 1rem;
+  background: var(--color-bg-input);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.toolLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+}
+
+.toolSelect,
+.toolInput {
+  padding: 0.4rem 0.5rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  min-width: 7rem;
+}
+
+.toolInput[type='number'] {
+  width: 4.5rem;
+  min-width: 4.5rem;
+}
+
+.colorInput {
+  width: 2.75rem;
+  height: 2rem;
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+
+.toolGroup {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.toggleBtn {
+  width: 2.25rem;
+  height: 2.25rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.toggleBtn:hover {
+  border-color: var(--color-accent);
+}
+
+.toggleActive {
+  background: var(--color-accent-muted);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+@media (max-width: 900px) {
+  .root {
+    grid-template-columns: 1fr;
+  }
+
+  .aside {
+    order: 2;
+  }
+
+  .workspace {
+    order: 1;
+  }
+}

@@ -253,12 +253,18 @@ export interface SubmitProcessResponse {
   data?: { taskId: string; taskIds?: string[] };
 }
 
+export interface InfographicItemApi {
+  text: string;
+  position: string;
+}
+
 export interface ProcessStatusResponse {
   success: boolean;
   data?: {
     taskId: string;
     status: 'pending' | 'completed' | 'failed';
     result?: { images: string[] };
+    infographicItems?: InfographicItemApi[];
   };
 }
 

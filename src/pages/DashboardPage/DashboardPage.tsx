@@ -6,6 +6,9 @@ import ProcessModeSelector from '../../components/dashboard/ProcessModeSelector'
 import ProcessOptions from '../../components/dashboard/ProcessOptions';
 import ProcessQueueStatus from '../../components/dashboard/ProcessQueueStatus';
 import ProcessResults from '../../components/dashboard/ProcessResults';
+import InfographicEditor, {
+  type InfographicRecommendedItem,
+} from '../../components/dashboard/InfographicEditor';
 import {
   submitProcess,
   getProcessStatus,
@@ -29,6 +32,10 @@ export default function DashboardPage() {
   const [submitting, setSubmitting] = useState(false);
   const [queueStatus, setQueueStatus] = useState<'pending' | 'completed' | 'failed' | null>(null);
   const [resultImages, setResultImages] = useState<string[]>([]);
+  const [infographicData, setInfographicData] = useState<{
+    imageUrl: string;
+    items: InfographicRecommendedItem[];
+  } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -54,6 +61,7 @@ export default function DashboardPage() {
     setError(null);
     setQueueStatus(null);
     setResultImages([]);
+    setInfographicData(null);
   }, [clearPreview]);
 
   const handleClear = useCallback(() => {
@@ -61,6 +69,7 @@ export default function DashboardPage() {
     setError(null);
     setQueueStatus(null);
     setResultImages([]);
+    setInfographicData(null);
   }, [clearPreview]);
 
   const stopPolling = useCallback(() => {
@@ -78,14 +87,25 @@ export default function DashboardPage() {
         setQueueStatus(res.data.status);
         if (res.data.status === 'completed' && res.data.result?.images) {
           setResultImages(res.data.result.images);
+          const items = res.data.infographicItems;
+          if (items && items.length > 0) {
+            setInfographicData({
+              imageUrl: res.data.result.images[0],
+              items,
+            });
+          } else {
+            setInfographicData(null);
+          }
           stopPolling();
         }
         if (res.data.status === 'failed') {
+          setInfographicData(null);
           stopPolling();
         }
       } catch {
         stopPolling();
         setQueueStatus('failed');
+        setInfographicData(null);
       }
     },
     [stopPolling]
@@ -95,11 +115,17 @@ export default function DashboardPage() {
     async (ids: string[]) => {
       let completed = 0;
       const allImages: string[] = [];
+      let collectedItems: InfographicRecommendedItem[] | undefined;
+      let firstImageForEditor: string | undefined;
       for (const id of ids) {
         try {
           const res = await getProcessStatus(id);
           if (res.success && res.data?.status === 'completed' && res.data.result?.images) {
             allImages.push(...res.data.result.images);
+            if (!firstImageForEditor) firstImageForEditor = res.data.result.images[0];
+            if (res.data.infographicItems?.length && !collectedItems) {
+              collectedItems = res.data.infographicItems;
+            }
             completed += 1;
           } else if (res.success && res.data?.status === 'failed') {
             completed += 1;
@@ -112,6 +138,11 @@ export default function DashboardPage() {
         stopPolling();
         setQueueStatus(allImages.length > 0 ? 'completed' : 'failed');
         setResultImages(allImages);
+        if (collectedItems && collectedItems.length > 0 && firstImageForEditor) {
+          setInfographicData({ imageUrl: firstImageForEditor, items: collectedItems });
+        } else {
+          setInfographicData(null);
+        }
       }
     },
     [stopPolling]
@@ -135,6 +166,7 @@ export default function DashboardPage() {
     setError(null);
     setQueueStatus(null);
     setResultImages([]);
+    setInfographicData(null);
     stopPolling();
 
     try {
@@ -183,6 +215,7 @@ export default function DashboardPage() {
     stopPolling();
     setQueueStatus(null);
     setResultImages([]);
+    setInfographicData(null);
   };
 
   useEffect(() => () => stopPolling(), [stopPolling]);
@@ -390,9 +423,24 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {resultImages.length > 0 && (
+            {queueStatus === 'completed' && resultImages.length > 0 && (
               <div className={styles.workspaceCard}>
-                <ProcessResults images={resultImages} />
+                {infographicData && infographicData.items.length > 0 && (
+                  <InfographicEditor
+                    imageUrl={infographicData.imageUrl}
+                    recommendedItems={infographicData.items}
+                  />
+                )}
+                {infographicData &&
+                  infographicData.items.length > 0 &&
+                  resultImages.length > 1 && (
+                    <p className={styles.infographicVariantsHint}>
+                      {t('dashboard.infographicVariantsBelow')}
+                    </p>
+                  )}
+                {(!infographicData || infographicData.items.length === 0 || resultImages.length > 1) && (
+                  <ProcessResults images={resultImages} />
+                )}
                 <Button
                   variant="outline"
                   className={styles.newTaskBtn}
