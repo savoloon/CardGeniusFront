@@ -10,6 +10,71 @@
   border: 2px dashed rgba(255, 255, 255, 0.15);
 }
 
+.zoneCompact {
+  min-height: 138px;
+}
+
+.zoneCompact .placeholder {
+  padding: 1rem 0.85rem;
+  gap: 0.35rem;
+}
+
+.zoneCompact .icon {
+  font-size: 1.45rem;
+}
+
+.zoneCompact .text {
+  font-size: 0.84375rem;
+}
+
+.zoneCompact .sub {
+  font-size: 0.72rem;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.zoneCompact.zoneFilled {
+  padding: 0.45rem;
+}
+
+/* Превью: выше «полотно», портрет не теряется в широкой колонке */
+.zoneCompact .preview {
+  min-height: 168px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.5rem;
+  border-radius: var(--radius-md);
+  background: rgba(0, 0, 0, 0.035);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='dark'] .zoneCompact .preview {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.zoneCompact .preview img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  width: auto;
+  height: auto;
+  max-height: min(260px, 42vh);
+  object-fit: contain;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme='dark'] .zoneCompact .preview img {
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+}
+
+.zoneCompact .hint {
+  margin-top: 0.4rem;
+  text-align: center;
+  width: 100%;
+}
+
 [data-theme="light"] .zone {
   border-color: rgba(0, 0, 0, 0.15);
   background: var(--color-bg-input);
@@ -26,6 +91,9 @@
 }
 
 .zone.zoneFilled {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
   border-style: solid;
   border-color: rgba(255, 255, 255, 0.08);
   padding: 0.5rem;

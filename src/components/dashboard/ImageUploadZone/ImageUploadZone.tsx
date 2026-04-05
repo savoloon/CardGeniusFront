@@ -8,6 +8,8 @@ interface ImageUploadZoneProps {
   onSelect: (file: File) => void;
   onClear: () => void;
   disabled?: boolean;
+  /** Shorter drop zone for dense sidebars */
+  compact?: boolean;
 }
 
 const ACCEPT = 'image/jpeg,image/png,image/webp';
@@ -19,6 +21,7 @@ export default function ImageUploadZone({
   onSelect,
   onClear,
   disabled,
+  compact,
 }: ImageUploadZoneProps) {
   const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -58,7 +61,7 @@ export default function ImageUploadZone({
   return (
     <div className={styles.wrapper}>
       <div
-        className={`${styles.zone} ${image ? styles.zoneFilled : ''} ${disabled ? styles.disabled : ''}`}
+        className={`${styles.zone} ${compact ? styles.zoneCompact : ''} ${image ? styles.zoneFilled : ''} ${disabled ? styles.disabled : ''}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onClick={handleClick}

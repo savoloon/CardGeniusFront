@@ -22,6 +22,10 @@ export interface TextLayer {
   textDecoration: 'none' | 'underline';
   rotation: number;
   zIndex: number;
+  textAlign: 'left' | 'center' | 'right';
+  direction: 'ltr' | 'rtl';
+  /** Text box background (CSS color or transparent) */
+  backgroundColor: string;
 }
 
 const FONT_OPTIONS = [
@@ -43,6 +47,9 @@ function newLayer(partial: Partial<TextLayer> & Pick<TextLayer, 'x' | 'y' | 'tex
     textDecoration: 'none',
     rotation: 0,
     zIndex: 10,
+    textAlign: 'left',
+    direction: 'ltr',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
     ...partial,
   };
 }
@@ -56,8 +63,11 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
   const { t } = useLanguage();
   const [layers, setLayers] = useState<TextLayer[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const dragRef = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(null);
+  const dragRef = useRef<{ id: string; startX: number; startY: number; origX: number; origY: number } | null>(
+    null
+  );
 
   const selected = layers.find((l) => l.id === selectedId) ?? null;
 
@@ -69,6 +79,15 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
   const addCustomText = useCallback(() => {
     setLayers((prev) => [...prev, newLayer({ text: t('dashboard.infographicNewText'), x: 50, y: 50 })]);
   }, [t]);
+
+  const addTextAtPercent = useCallback(
+    (x: number, y: number) => {
+      const layer = newLayer({ text: t('dashboard.infographicNewText'), x, y });
+      setLayers((prev) => [...prev, layer]);
+      setSelectedId(layer.id);
+    },
+    [t]
+  );
 
   const updateLayer = useCallback((id: string, patch: Partial<TextLayer>) => {
     setLayers((prev) => prev.map((l) => (l.id === id ? { ...l, ...patch } : l)));
@@ -85,7 +104,6 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
       e.stopPropagation();
       const layer = layers.find((l) => l.id === id);
       if (!layer || !containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
       dragRef.current = {
         id,
         startX: e.clientX,
@@ -114,10 +132,8 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
         prev.map((l) => (l.id === dragRef.current!.id ? { ...l, x: nx, y: ny } : l))
       );
     };
-    const onUp = (e: PointerEvent) => {
-      if (dragRef.current) {
-        dragRef.current = null;
-      }
+    const onUp = () => {
+      dragRef.current = null;
     };
     window.addEventListener('pointermove', onMove);
     window.addEventListener('pointerup', onUp);
@@ -132,6 +148,7 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
   const onDropCanvas = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
+      setDragOver(false);
       if (!containerRef.current) return;
       const raw = e.dataTransfer.getData('application/json');
       if (!raw) return;
@@ -151,13 +168,48 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
   const onDragOverCanvas = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
+    setDragOver(true);
   }, []);
+
+  const onDragLeaveCanvas = useCallback((e: React.DragEvent) => {
+    if (!containerRef.current?.contains(e.relatedTarget as Node)) {
+      setDragOver(false);
+    }
+  }, []);
+
+  const onCanvasDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if ((e.target as HTMLElement).closest(`.${styles.layer}`)) return;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect || rect.width < 1 || rect.height < 1) return;
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      addTextAtPercent(
+        Math.min(100, Math.max(0, x)),
+        Math.min(100, Math.max(0, y))
+      );
+    },
+    [addTextAtPercent]
+  );
+
+  const onCanvasClick = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest(`.${styles.layer}`)) return;
+    setSelectedId(null);
+  }, []);
+
+  const fillPickerValue =
+    selected && selected.backgroundColor !== 'transparent'
+      ? selected.backgroundColor.startsWith('#')
+        ? selected.backgroundColor
+        : '#ffffff'
+      : '#ffffff';
 
   return (
     <div className={styles.root}>
       <aside className={styles.aside}>
         <h3 className={styles.asideTitle}>{t('dashboard.infographicRecommended')}</h3>
         <p className={styles.asideHint}>{t('dashboard.infographicRecommendedHint')}</p>
+        <p className={styles.canvasHint}>{t('dashboard.infographicDoubleClickHint')}</p>
         <ul className={styles.recommendedList}>
           {recommendedItems.map((item, idx) => (
             <li key={idx} className={styles.recommendedItem}>
@@ -171,7 +223,12 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
               >
                 {item.text}
               </span>
-              <Button type="button" variant="outline" className={styles.placeBtn} onClick={() => placeRecommended(item)}>
+              <Button
+                type="button"
+                variant="outline"
+                className={styles.placeBtn}
+                onClick={() => placeRecommended(item)}
+              >
                 {t('dashboard.infographicPlaceHere')}
               </Button>
             </li>
@@ -185,10 +242,12 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
       <div className={styles.workspace}>
         <div
           ref={containerRef}
-          className={styles.canvas}
+          className={`${styles.canvas} ${dragOver ? styles.canvasDragOver : ''}`}
           onDrop={onDropCanvas}
           onDragOver={onDragOverCanvas}
-          onClick={() => setSelectedId(null)}
+          onDragLeave={onDragLeaveCanvas}
+          onClick={onCanvasClick}
+          onDoubleClick={onCanvasDoubleClick}
         >
           <img src={imageUrl} alt="" className={styles.canvasImg} draggable={false} />
           {layers.map((layer) => (
@@ -214,22 +273,32 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
               >
                 ⋮⋮
               </button>
-              <textarea
-                className={styles.layerText}
-                value={layer.text}
-                onChange={(e) => updateLayer(layer.id, { text: e.target.value })}
-                onClick={(e) => e.stopPropagation()}
-                onPointerDown={(e) => e.stopPropagation()}
-                rows={Math.min(8, Math.max(2, layer.text.split('\n').length))}
+              <div
+                className={styles.layerInner}
                 style={{
-                  fontFamily: layer.fontFamily,
-                  fontSize: `${layer.fontSize}px`,
-                  color: layer.color,
-                  fontWeight: layer.fontWeight,
-                  fontStyle: layer.fontStyle,
-                  textDecoration: layer.textDecoration,
+                  backgroundColor:
+                    layer.backgroundColor === 'transparent' ? 'transparent' : layer.backgroundColor,
                 }}
-              />
+              >
+                <textarea
+                  className={styles.layerText}
+                  dir={layer.direction}
+                  value={layer.text}
+                  onChange={(e) => updateLayer(layer.id, { text: e.target.value })}
+                  onClick={(e) => e.stopPropagation()}
+                  onPointerDown={(e) => e.stopPropagation()}
+                  rows={Math.min(8, Math.max(2, layer.text.split('\n').length))}
+                  style={{
+                    fontFamily: layer.fontFamily,
+                    fontSize: `${layer.fontSize}px`,
+                    color: layer.color,
+                    fontWeight: layer.fontWeight,
+                    fontStyle: layer.fontStyle,
+                    textDecoration: layer.textDecoration,
+                    textAlign: layer.textAlign,
+                  }}
+                />
+              </div>
               {selectedId === layer.id && (
                 <button
                   type="button"
@@ -271,7 +340,11 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
                 min={8}
                 max={120}
                 value={selected.fontSize}
-                onChange={(e) => updateLayer(selected.id, { fontSize: Math.max(8, Math.min(120, Number(e.target.value) || 16)) })}
+                onChange={(e) =>
+                  updateLayer(selected.id, {
+                    fontSize: Math.max(8, Math.min(120, Number(e.target.value) || 16)),
+                  })
+                }
               />
             </label>
             <label className={styles.toolLabel}>
@@ -283,6 +356,64 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
                 onChange={(e) => updateLayer(selected.id, { color: e.target.value })}
               />
             </label>
+            <label className={styles.toolLabel}>
+              {t('dashboard.infographicFillColor')}
+              <input
+                type="color"
+                className={styles.colorInput}
+                value={fillPickerValue}
+                disabled={selected.backgroundColor === 'transparent'}
+                onChange={(e) => updateLayer(selected.id, { backgroundColor: e.target.value })}
+              />
+            </label>
+            <label className={styles.toolCheck}>
+              <input
+                type="checkbox"
+                checked={selected.backgroundColor === 'transparent'}
+                onChange={(e) =>
+                  updateLayer(selected.id, {
+                    backgroundColor: e.target.checked ? 'transparent' : 'rgba(255,255,255,0.92)',
+                  })
+                }
+              />
+              <span>{t('dashboard.infographicTransparentFill')}</span>
+            </label>
+            <div className={styles.toolGroup} role="group" aria-label={t('dashboard.infographicAlignGroup')}>
+              <button
+                type="button"
+                className={`${styles.toggleBtn} ${selected.textAlign === 'left' ? styles.toggleActive : ''}`}
+                onClick={() => updateLayer(selected.id, { textAlign: 'left' })}
+                title={t('dashboard.infographicAlignLeft')}
+              >
+                L
+              </button>
+              <button
+                type="button"
+                className={`${styles.toggleBtn} ${selected.textAlign === 'center' ? styles.toggleActive : ''}`}
+                onClick={() => updateLayer(selected.id, { textAlign: 'center' })}
+                title={t('dashboard.infographicAlignCenter')}
+              >
+                C
+              </button>
+              <button
+                type="button"
+                className={`${styles.toggleBtn} ${selected.textAlign === 'right' ? styles.toggleActive : ''}`}
+                onClick={() => updateLayer(selected.id, { textAlign: 'right' })}
+                title={t('dashboard.infographicAlignRight')}
+              >
+                R
+              </button>
+            </div>
+            <button
+              type="button"
+              className={`${styles.toggleBtn} ${selected.direction === 'rtl' ? styles.toggleActive : ''}`}
+              onClick={() =>
+                updateLayer(selected.id, { direction: selected.direction === 'rtl' ? 'ltr' : 'rtl' })
+              }
+              title={t('dashboard.infographicRtl')}
+            >
+              RTL
+            </button>
             <label className={styles.toolLabel}>
               {t('dashboard.infographicRotation')}
               <input
@@ -298,14 +429,20 @@ export default function InfographicEditor({ imageUrl, recommendedItems }: Infogr
               <button
                 type="button"
                 className={`${styles.toggleBtn} ${selected.fontWeight >= 600 ? styles.toggleActive : ''}`}
-                onClick={() => updateLayer(selected.id, { fontWeight: selected.fontWeight >= 600 ? 400 : 700 })}
+                onClick={() =>
+                  updateLayer(selected.id, { fontWeight: selected.fontWeight >= 600 ? 400 : 700 })
+                }
               >
                 B
               </button>
               <button
                 type="button"
                 className={`${styles.toggleBtn} ${selected.fontStyle === 'italic' ? styles.toggleActive : ''}`}
-                onClick={() => updateLayer(selected.id, { fontStyle: selected.fontStyle === 'italic' ? 'normal' : 'italic' })}
+                onClick={() =>
+                  updateLayer(selected.id, {
+                    fontStyle: selected.fontStyle === 'italic' ? 'normal' : 'italic',
+                  })
+                }
               >
                 I
               </button>

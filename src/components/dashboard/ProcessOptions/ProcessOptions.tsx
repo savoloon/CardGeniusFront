@@ -15,6 +15,9 @@ interface ProcessOptionsProps {
   onProductNameChange: (s: string) => void;
   onProductDescriptionChange: (s: string) => void;
   disabled?: boolean;
+  /** Hide the built-in section heading when wrapped in an accordion */
+  hideSectionTitle?: boolean;
+  className?: string;
 }
 
 const VARIANT_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
@@ -30,6 +33,8 @@ function ProcessOptionsInner({
   onProductNameChange,
   onProductDescriptionChange,
   disabled,
+  hideSectionTitle,
+  className,
 }: ProcessOptionsProps) {
   const { t } = useLanguage();
 
@@ -44,8 +49,10 @@ function ProcessOptionsInner({
   const hasAnyOptions = needsVariants || needsPrompt || needsInfographicFields;
 
   return (
-    <div className={styles.wrapper}>
-      <h3 className={styles.sectionTitle}>{t('dashboard.stepParams')}</h3>
+    <div className={[styles.wrapper, className].filter(Boolean).join(' ')}>
+      {!hideSectionTitle && (
+        <h3 className={styles.sectionTitle}>{t('dashboard.stepParams')}</h3>
+      )}
       {!hasAnyOptions && (
         <p className={styles.noParams}>{t('dashboard.noParamsForMode')}</p>
       )}

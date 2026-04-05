@@ -15,17 +15,22 @@ interface ProcessModeSelectorProps {
   value: ProcessMode;
   onChange: (mode: ProcessMode) => void;
   disabled?: boolean;
+  /** Hide the built-in section heading when the parent already provides a label */
+  hideSectionTitle?: boolean;
 }
 
 export default function ProcessModeSelector({
   value,
   onChange,
   disabled,
+  hideSectionTitle,
 }: ProcessModeSelectorProps) {
   const { t } = useLanguage();
   return (
     <div className={styles.wrapper}>
-      <h3 className={styles.sectionTitle}>{t('dashboard.stepMode')}</h3>
+      {!hideSectionTitle && (
+        <h3 className={styles.sectionTitle}>{t('dashboard.stepMode')}</h3>
+      )}
       <label className={styles.label} id="mode-label">{t('dashboard.modeLabel')}</label>
       <div className={styles.grid} role="group" aria-labelledby="mode-label">
         {MODE_KEYS.map((mode) => (
