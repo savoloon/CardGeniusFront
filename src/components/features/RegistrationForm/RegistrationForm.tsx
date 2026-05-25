@@ -106,7 +106,7 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       const message =
         apiError.response?.data?.message ??
         apiError.response?.data?.errors?.[0]?.message ??
-        'Ошибка подключения к серверу';
+        t('auth.connectionError');
       const fieldErrors: FormErrors = {};
       if (apiError.response?.data?.errors) {
         apiError.response.data.errors.forEach((e) => {

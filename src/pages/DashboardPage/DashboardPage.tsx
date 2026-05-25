@@ -1,24 +1,22 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Button, Input } from '../../components/ui';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useProcessPolling } from '../../hooks/useProcessPolling';
+import { useApiErrorMessage } from '../../hooks/useApiErrorMessage';
 import ImageUploadZone from '../../components/dashboard/ImageUploadZone';
 import ProcessModeSelector from '../../components/dashboard/ProcessModeSelector';
 import ProcessOptions from '../../components/dashboard/ProcessOptions';
 import ProcessQueueStatus from '../../components/dashboard/ProcessQueueStatus';
 import ProcessResults from '../../components/dashboard/ProcessResults';
-import InfographicEditor, {
-  type InfographicRecommendedItem,
-} from '../../components/dashboard/InfographicEditor';
+import InfographicEditor from '../../components/dashboard/InfographicEditor';
 import {
   submitProcess,
-  getProcessStatus,
   generateDescription as apiGenerateDescription,
   type ProcessMode,
-  type ApiError,
 } from '../../services/api';
 import styles from './DashboardPage.module.css';
 
-const POLL_INTERVAL = 2000;
 const NARROW_BREAKPOINT = 900;
 
 type MainTab = 'process' | 'copy';
@@ -26,6 +24,20 @@ type MobileWorkspaceTab = 'canvas' | 'controls';
 
 export default function DashboardPage() {
   const { t } = useLanguage();
+  const getErrorMessage = useApiErrorMessage();
+  const isNarrow = useMediaQuery(`(max-width: ${NARROW_BREAKPOINT - 1}px)`);
+  const {
+    queueStatus,
+    resultImages,
+    infographicItemsByVariant,
+    activeResultIndex,
+    setActiveResultIndex,
+    startPolling,
+    stopPolling,
+    resetResults,
+  } = useProcessPolling();
+
+  const previewUrlRef = useRef<string | null>(null);
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [mode, setMode] = useState<ProcessMode>('remove_background');
@@ -34,15 +46,7 @@ export default function DashboardPage() {
   const [productName, setProductName] = useState('');
   const [productDescription, setProductDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [queueStatus, setQueueStatus] = useState<'pending' | 'completed' | 'failed' | null>(null);
-  const [resultImages, setResultImages] = useState<string[]>([]);
-  /** Recommended texts per result image index (parallel to resultImages) */
-  const [infographicItemsByVariant, setInfographicItemsByVariant] = useState<
-    InfographicRecommendedItem[][]
-  >([]);
-  const [activeResultIndex, setActiveResultIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [descProductName, setDescProductName] = useState('');
   const [descProductDescription, setDescProductDescription] = useState('');
@@ -55,120 +59,36 @@ export default function DashboardPage() {
 
   const [mainTab, setMainTab] = useState<MainTab>('process');
   const [mobileWorkspaceTab, setMobileWorkspaceTab] = useState<MobileWorkspaceTab>('canvas');
-  const [isNarrow, setIsNarrow] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < NARROW_BREAKPOINT : false
-  );
-
-  useEffect(() => {
-    const mq = window.matchMedia(`(max-width: ${NARROW_BREAKPOINT - 1}px)`);
-    const apply = () => setIsNarrow(mq.matches);
-    apply();
-    mq.addEventListener('change', apply);
-    return () => mq.removeEventListener('change', apply);
-  }, []);
 
   const clearPreview = useCallback(() => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
+    }
     setPreviewUrl(null);
     setImage(null);
-  }, [previewUrl]);
+  }, []);
 
   const handleSelectImage = useCallback(
     (file: File) => {
       clearPreview();
+      const url = URL.createObjectURL(file);
+      previewUrlRef.current = url;
       setImage(file);
-      setPreviewUrl(URL.createObjectURL(file));
+      setPreviewUrl(url);
       setError(null);
-      setQueueStatus(null);
-      setResultImages([]);
-      setInfographicItemsByVariant([]);
-      setActiveResultIndex(0);
+      stopPolling();
+      resetResults();
     },
-    [clearPreview]
+    [clearPreview, stopPolling, resetResults]
   );
 
   const handleClear = useCallback(() => {
     clearPreview();
     setError(null);
-    setQueueStatus(null);
-    setResultImages([]);
-    setInfographicItemsByVariant([]);
-    setActiveResultIndex(0);
-  }, [clearPreview]);
-
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
-    }
-  }, []);
-
-  const pollTask = useCallback(
-    async (id: string) => {
-      try {
-        const res = await getProcessStatus(id);
-        if (!res.success || !res.data) return;
-        setQueueStatus(res.data.status);
-        if (res.data.status === 'completed' && res.data.result?.images) {
-          const imgs = res.data.result.images;
-          const items = res.data.infographicItems ?? [];
-          const itemCopy = items.length > 0 ? [...items] : [];
-          setResultImages(imgs);
-          setActiveResultIndex(0);
-          setInfographicItemsByVariant(imgs.map(() => [...itemCopy]));
-          stopPolling();
-        }
-        if (res.data.status === 'failed') {
-          setResultImages([]);
-          setInfographicItemsByVariant([]);
-          setActiveResultIndex(0);
-          stopPolling();
-        }
-      } catch {
-        stopPolling();
-        setQueueStatus('failed');
-        setInfographicItemsByVariant([]);
-      }
-    },
-    [stopPolling]
-  );
-
-  const pollAllTasks = useCallback(
-    async (ids: string[]) => {
-      let completed = 0;
-      const allImages: string[] = [];
-      const itemsMatrix: InfographicRecommendedItem[][] = [];
-      for (const id of ids) {
-        try {
-          const res = await getProcessStatus(id);
-          if (res.success && res.data?.status === 'completed' && res.data.result?.images) {
-            const imgs = res.data.result.images;
-            const rawItems = res.data.infographicItems ?? [];
-            const itemCopy = rawItems.length > 0 ? [...rawItems] : [];
-            for (const _u of imgs) {
-              allImages.push(_u);
-              itemsMatrix.push([...itemCopy]);
-            }
-            completed += 1;
-          } else if (res.success && res.data?.status === 'failed') {
-            completed += 1;
-          }
-        } catch {
-          completed += 1;
-        }
-      }
-      if (completed === ids.length) {
-        stopPolling();
-        setQueueStatus(allImages.length > 0 ? 'completed' : 'failed');
-        setResultImages(allImages);
-        setActiveResultIndex(0);
-        setInfographicItemsByVariant(
-          allImages.map((_, i) => itemsMatrix[i] ?? [])
-        );
-      }
-    },
-    [stopPolling]
-  );
+    stopPolling();
+    resetResults();
+  }, [clearPreview, stopPolling, resetResults]);
 
   const handleSubmit = async () => {
     if (!image) {
@@ -186,11 +106,8 @@ export default function DashboardPage() {
 
     setSubmitting(true);
     setError(null);
-    setQueueStatus(null);
-    setResultImages([]);
-    setInfographicItemsByVariant([]);
-    setActiveResultIndex(0);
     stopPolling();
+    resetResults();
 
     try {
       const res = await submitProcess(image, mode, {
@@ -216,18 +133,12 @@ export default function DashboardPage() {
             ? [res.data.taskId]
             : [];
       if (res.success && taskIds.length > 0) {
-        setQueueStatus('pending');
-        if (taskIds.length === 1) {
-          pollRef.current = setInterval(() => pollTask(taskIds[0]), POLL_INTERVAL);
-        } else {
-          pollRef.current = setInterval(() => pollAllTasks(taskIds), POLL_INTERVAL);
-        }
+        startPolling(taskIds);
       } else {
         setError(res.message ?? t('dashboard.submitError'));
       }
     } catch (err) {
-      const apiErr = err as ApiError;
-      setError(apiErr.response?.data?.message ?? t('auth.connectionError'));
+      setError(getErrorMessage(err));
     } finally {
       setSubmitting(false);
     }
@@ -235,13 +146,8 @@ export default function DashboardPage() {
 
   const handleNewTask = () => {
     stopPolling();
-    setQueueStatus(null);
-    setResultImages([]);
-    setInfographicItemsByVariant([]);
-    setActiveResultIndex(0);
+    resetResults();
   };
-
-  useEffect(() => () => stopPolling(), [stopPolling]);
 
   const handleGenerateDescription = async () => {
     const name = descProductName.trim();
@@ -263,8 +169,7 @@ export default function DashboardPage() {
         setDescError(res.message ?? t('dashboard.descriptionError'));
       }
     } catch (err) {
-      const apiErr = err as ApiError;
-      setDescError(apiErr.response?.data?.message ?? t('dashboard.descriptionError'));
+      setDescError(getErrorMessage(err) || t('dashboard.descriptionError'));
     } finally {
       setDescLoading(false);
     }

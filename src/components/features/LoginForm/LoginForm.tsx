@@ -77,18 +77,24 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
         onSuccess?.(response.data);
       } else {
         setErrors({
-          submit: response.message ?? t('auth.loginError'),
+          submit: t('auth.invalidCredentials'),
         });
       }
     } catch (err) {
       const apiError = err as ApiError;
+      const data = apiError.response?.data;
+      const code = data?.code;
       const message =
-        apiError.response?.data?.message ??
-        apiError.response?.data?.errors?.[0]?.message ??
-        t('auth.connectionError');
+        code === 'AUTH_INVALID_CREDENTIALS'
+          ? t('auth.invalidCredentials')
+          : data?.message ??
+            data?.errors?.[0]?.message ??
+            (apiError.response?.status === 401
+              ? t('auth.invalidCredentials')
+              : t('auth.connectionError'));
       const fieldErrors: FormErrors = {};
-      if (apiError.response?.data?.errors) {
-        apiError.response.data.errors.forEach((e) => {
+      if (data?.errors) {
+        data.errors.forEach((e) => {
           (fieldErrors as Record<string, string>)[e.field] = e.message;
         });
       }

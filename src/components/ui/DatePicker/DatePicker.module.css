@@ -1,0 +1,124 @@
+.root {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.label {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.fieldBtn {
+  min-height: 38px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.9375rem;
+  color: var(--color-text);
+  background: var(--color-bg-input);
+  border: 1px solid var(--color-bg-input);
+  border-radius: var(--radius-md);
+  text-align: left;
+  cursor: pointer;
+}
+
+.fieldBtn:hover {
+  border-color: var(--color-text-dim);
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  z-index: 40;
+  width: 280px;
+  padding: 0.65rem;
+  border-radius: var(--radius-lg);
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-card, rgba(255, 255, 255, 0.08));
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.22);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.month {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text);
+  text-transform: capitalize;
+}
+
+.navBtn {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--color-border-card, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-input);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.weekdays,
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.weekdays {
+  margin-bottom: 0.25rem;
+}
+
+.weekdays span {
+  text-align: center;
+  font-size: 0.7rem;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+}
+
+.day {
+  height: 32px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+.day:hover {
+  background: var(--color-bg-input);
+}
+
+.outside {
+  color: var(--color-text-dim);
+  opacity: 0.7;
+}
+
+.selected {
+  background: var(--color-accent-muted);
+  border-color: var(--color-accent);
+  color: var(--color-text);
+}
+
+.today {
+  border-color: var(--color-accent);
+}
+
+.footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+}
+
+.footerBtn {
+  border: none;
+  background: transparent;
+  color: var(--color-accent);
+  cursor: pointer;
+  font-size: 0.8125rem;
+}

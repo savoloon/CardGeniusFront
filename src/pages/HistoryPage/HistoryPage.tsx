@@ -1,54 +1,32 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Card, Button } from '../../components/ui';
+import { Card, Button, DatePicker, StyledList, Select } from '../../components/ui';
+import HistoryListItem from '../../components/history/HistoryListItem';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useApiErrorMessage } from '../../hooks/useApiErrorMessage';
 import {
   getHistory,
   type HistoryItem,
   type HistoryFilters,
-  type ApiError,
 } from '../../services/api';
 import styles from './HistoryPage.module.css';
 
-const MODE_KEYS: Record<string, string> = {
-  remove_background: 'dashboard.modeRemoveBg',
-  generate_background: 'dashboard.modeGenerateBg',
-  generate_exposure: 'dashboard.modeGenerateExposure',
-  generate_exposition_by_request: 'dashboard.modeExposureByRequest',
-  improve_image: 'dashboard.modeImprove',
-  generate_infographic: 'dashboard.modeInfographic',
-};
-
-const STATUS_KEYS: Record<string, string> = {
-  pending: 'history.statusPending',
-  completed: 'history.statusCompleted',
-  failed: 'history.statusFailed',
-};
-
-function formatDate(iso: string) {
-  try {
-    const d = new Date(iso);
-    return d.toLocaleString(undefined, {
-      dateStyle: 'short',
-      timeStyle: 'short',
-    });
-  } catch {
-    return iso;
-  }
-}
-
 export default function HistoryPage() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const getErrorMessage = useApiErrorMessage();
   const [items, setItems] = useState<HistoryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [isFetching, setIsFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
 
   const fetchList = useCallback(
-    async (filters: HistoryFilters) => {
-      setLoading(true);
+    async (filters: HistoryFilters, opts?: { initial?: boolean }) => {
+      const isInitial = opts?.initial ?? false;
+      if (isInitial) setInitialLoading(true);
+      else setIsFetching(true);
       setError(null);
       try {
         const res = await getHistory(filters);
@@ -56,17 +34,17 @@ export default function HistoryPage() {
           setItems(res.data.items);
         }
       } catch (err) {
-        const apiErr = err as ApiError;
-        setError(apiErr.response?.data?.message ?? t('auth.connectionError'));
+        setError(getErrorMessage(err));
       } finally {
-        setLoading(false);
+        if (isInitial) setInitialLoading(false);
+        else setIsFetching(false);
       }
     },
-    [t]
+    [getErrorMessage]
   );
 
   useEffect(() => {
-    fetchList({});
+    fetchList({}, { initial: true });
   }, [fetchList]);
 
   const handleApplyFilters = () => {
@@ -85,67 +63,111 @@ export default function HistoryPage() {
   };
 
   const hasActiveFilters = !!statusFilter || !!dateFrom || !!dateTo;
+  const statusOptions = useMemo(
+    () => [
+      { value: '', label: t('history.statusAll') },
+      { value: 'pending', label: t('history.statusPending') },
+      { value: 'completed', label: t('history.statusCompleted') },
+      { value: 'failed', label: t('history.statusFailed') },
+    ],
+    [t]
+  );
+
+  const stats = useMemo(() => {
+    let pending = 0;
+    let completed = 0;
+    let failed = 0;
+    for (const it of items) {
+      if (it.status === 'pending') pending += 1;
+      else if (it.status === 'completed') completed += 1;
+      else if (it.status === 'failed') failed += 1;
+    }
+    return { total: items.length, pending, completed, failed };
+  }, [items]);
+
+  const localeTag = locale === 'en' ? 'en-US' : 'ru-RU';
+
+  const renderHistoryItem = useCallback(
+    (item: HistoryItem) => <HistoryListItem item={item} locale={localeTag} />,
+    [localeTag]
+  );
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>{t('history.title')}</h1>
-        <p className={styles.subtitle}>{t('history.subtitle')}</p>
+        <div>
+          <h1 className={styles.title}>{t('history.title')}</h1>
+          <p className={styles.subtitle}>{t('history.subtitle')}</p>
+        </div>
+        <Link to="/dashboard" className={styles.primaryLink}>
+          <Button>{t('history.goToDashboard')}</Button>
+        </Link>
       </header>
+
+      {hasActiveFilters && (
+        <p className={styles.statsHint}>{t('history.statsFilteredHint')}</p>
+      )}
+      <section className={styles.statsGrid} aria-label={t('history.filterStatus')}>
+        <Card className={styles.statCard}>
+          <span className={styles.statLabel}>{t('history.statusAll')}</span>
+          <strong className={styles.statValue}>{stats.total}</strong>
+        </Card>
+        <Card className={styles.statCard}>
+          <span className={styles.statLabel}>{t('history.statusPending')}</span>
+          <strong className={styles.statValue}>{stats.pending}</strong>
+        </Card>
+        <Card className={styles.statCard}>
+          <span className={styles.statLabel}>{t('history.statusCompleted')}</span>
+          <strong className={styles.statValue}>{stats.completed}</strong>
+        </Card>
+        <Card className={styles.statCard}>
+          <span className={styles.statLabel}>{t('history.statusFailed')}</span>
+          <strong className={styles.statValue}>{stats.failed}</strong>
+        </Card>
+      </section>
 
       <Card className={styles.filtersCard}>
         <div className={styles.filtersRow}>
           <label className={styles.filterLabel}>
-            <span className={styles.filterLabelText}>{t('history.filterStatus')}</span>
-            <select
-              className={styles.select}
+            <Select
+              label={t('history.filterStatus')}
               value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              aria-label={t('history.filterStatus')}
-            >
-              <option value="">{t('history.statusAll')}</option>
-              <option value="pending">{t('history.statusPending')}</option>
-              <option value="completed">{t('history.statusCompleted')}</option>
-              <option value="failed">{t('history.statusFailed')}</option>
-            </select>
-          </label>
-          <label className={styles.filterLabel}>
-            <span className={styles.filterLabelText}>{t('history.filterDateFrom')}</span>
-            <input
-              type="date"
-              className={styles.dateInput}
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              aria-label={t('history.filterDateFrom')}
+              options={statusOptions}
+              onChange={setStatusFilter}
             />
           </label>
           <label className={styles.filterLabel}>
-            <span className={styles.filterLabelText}>{t('history.filterDateTo')}</span>
-            <input
-              type="date"
-              className={styles.dateInput}
+            <DatePicker
+              label={t('history.filterDateFrom')}
+              value={dateFrom}
+              onChange={setDateFrom}
+            />
+          </label>
+          <label className={styles.filterLabel}>
+            <DatePicker
+              label={t('history.filterDateTo')}
               value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              aria-label={t('history.filterDateTo')}
+              onChange={setDateTo}
             />
           </label>
         </div>
         <div className={styles.filtersActions}>
-          <Button onClick={handleApplyFilters} disabled={loading}>
+          <Button onClick={handleApplyFilters} disabled={isFetching}>
             {t('history.filterApply')}
           </Button>
           {hasActiveFilters && (
-            <Button variant="outline" onClick={handleClearFilters} disabled={loading}>
+            <Button variant="outline" onClick={handleClearFilters} disabled={isFetching}>
               {t('history.clearFilters')}
             </Button>
           )}
         </div>
       </Card>
 
-      {loading && <p className={styles.loading}>{t('admin.loading')}</p>}
+      {initialLoading && <p className={styles.loading}>{t('admin.loading')}</p>}
+      {!initialLoading && isFetching && <p className={styles.loading}>{t('admin.loading')}</p>}
       {error && <p className={styles.error} role="alert">{error}</p>}
 
-      {!loading && !error && items.length === 0 && (
+      {!initialLoading && !error && items.length === 0 && (
         <Card className={styles.emptyCard}>
           <p className={styles.emptyText}>
             {hasActiveFilters ? t('history.noResults') : t('history.empty')}
@@ -160,24 +182,13 @@ export default function HistoryPage() {
         </Card>
       )}
 
-      {!loading && !error && items.length > 0 && (
-        <ul className={styles.list}>
-          {items.map((item) => (
-            <li key={item.id}>
-              <Link to={`/history/${item.id}`} className={styles.cardLink}>
-                <Card className={styles.card}>
-                  <div className={styles.row}>
-                    <span className={styles.mode}>{t(MODE_KEYS[item.mode] ?? item.mode)}</span>
-                    <span className={styles.status} data-status={item.status}>
-                      {t(STATUS_KEYS[item.status] ?? item.status)}
-                    </span>
-                  </div>
-                  <div className={styles.date}>{formatDate(item.createdAt)}</div>
-                </Card>
-              </Link>
-            </li>
-          ))}
-        </ul>
+      {!initialLoading && !error && items.length > 0 && (
+        <StyledList
+          className={styles.list}
+          items={items}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderHistoryItem}
+        />
       )}
     </div>
   );

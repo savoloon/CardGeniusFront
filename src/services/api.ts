@@ -26,9 +26,20 @@ export interface ApiError {
     status: number;
     data: {
       message?: string;
+      code?: string;
       errors?: Array<{ field: string; message: string }>;
     };
   };
+}
+
+const AUTH_PUBLIC_ENDPOINTS = new Set([
+  '/auth/login',
+  '/auth/register',
+  '/auth/logout',
+]);
+
+function isAuthPublicEndpoint(endpoint: string): boolean {
+  return AUTH_PUBLIC_ENDPOINTS.has(endpoint);
 }
 
 interface RequestConfig extends RequestInit {
@@ -67,9 +78,12 @@ async function request<T>(
     const status = response.status;
     const data = await response.json().catch(() => ({}));
 
+    const isPublicAuth = isAuthPublicEndpoint(endpoint);
+
     // Только 401 (Unauthorized) считаем поводом попытаться обновить токен.
     // 403 (Forbidden) — доступ запрещён, не сбрасываем сессию.
-    if (status === 401 && !skipAuthRetry) {
+    // Публичные auth-эндпоинты (login/register) — без refresh и без редиректа.
+    if (status === 401 && !skipAuthRetry && !isPublicAuth) {
       try {
         const refreshRes = await request<LoginResponse>(
           '/auth/refresh',
@@ -101,6 +115,41 @@ async function request<T>(
   return response.json();
 }
 
+/** Fetch with cookies; retries once after token refresh on 401 (for multipart / non-JSON bodies). */
+async function fetchWithAuth(
+  url: string,
+  init: RequestInit = {},
+  skipAuthRetry = false
+): Promise<Response> {
+  const response = await fetch(url, { ...init, credentials: 'include' });
+
+  const isPublicAuth =
+    url.includes('/auth/login') ||
+    url.includes('/auth/register') ||
+    url.includes('/auth/logout');
+
+  if (response.status === 401 && !skipAuthRetry && !isPublicAuth) {
+    try {
+      const refreshRes = await request<LoginResponse>(
+        '/auth/refresh',
+        { method: 'POST' },
+        { skipAuthRetry: true }
+      );
+      if (refreshRes.success) {
+        return fetchWithAuth(url, init, true);
+      }
+    } catch {
+      // refresh failed
+    }
+    sessionExpiredHandler?.();
+    if (!url.includes('/auth/refresh')) {
+      window.location.href = '/';
+    }
+  }
+
+  return response;
+}
+
 export interface LoginUserData {
   email: string;
   password: string;
@@ -120,17 +169,25 @@ export interface LogoutResponse {
 }
 
 export async function registerUser(data: RegisterUserData): Promise<RegisterResponse> {
-  return request<RegisterResponse>('/auth/register', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  return request<RegisterResponse>(
+    '/auth/register',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    },
+    { skipAuthRetry: true }
+  );
 }
 
 export async function loginUser(data: LoginUserData): Promise<LoginResponse> {
-  return request<LoginResponse>('/auth/login', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  });
+  return request<LoginResponse>(
+    '/auth/login',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    },
+    { skipAuthRetry: true }
+  );
 }
 
 export async function refreshTokens(): Promise<LoginResponse> {
@@ -288,14 +345,10 @@ export async function submitProcess(
   if (mode === 'generate_infographic' && options?.productDescription)
     formData.append('product_description', options.productDescription);
 
-  const url = `${API_URL}/process`;
-  const config: RequestInit = {
+  const response = await fetchWithAuth(`${API_URL}/process`, {
     method: 'POST',
-    credentials: 'include',
     body: formData,
-  };
-
-  const response = await fetch(url, config);
+  });
   const data = await response.json().catch(() => ({}));
 
   if (!response.ok) {

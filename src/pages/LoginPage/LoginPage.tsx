@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import LoginForm from '../../components/features/LoginForm';
@@ -10,7 +9,6 @@ interface SuccessData {
 }
 
 export default function LoginPage() {
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const { setUserFromLogin } = useAuth();
 
@@ -23,11 +21,7 @@ export default function LoginPage() {
 
   return (
     <div className={styles.page}>
-      {successMessage ? (
-        <div className={styles.successMessage}>{successMessage}</div>
-      ) : (
-        <LoginForm onSuccess={handleSuccess} />
-      )}
+      <LoginForm onSuccess={handleSuccess} />
     </div>
   );
 }

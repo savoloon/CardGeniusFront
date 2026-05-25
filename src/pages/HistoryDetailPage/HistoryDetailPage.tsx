@@ -1,27 +1,21 @@
 import { useState, useEffect } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Card, Button } from '../../components/ui';
-import ProcessResults from '../../components/dashboard/ProcessResults/ProcessResults';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { useApiErrorMessage } from '../../hooks/useApiErrorMessage';
+import { getProcessModeLabelKey } from '../../constants/processModes';
+import { formatLocaleDateTime } from '../../utils/formatDate';
 import {
   getHistoryItem,
   getProcessStatus,
   getProcessInputImageUrl,
-  type ApiError,
 } from '../../services/api';
 import styles from './HistoryDetailPage.module.css';
 
-const MODE_KEYS: Record<string, string> = {
-  remove_background: 'dashboard.modeRemoveBg',
-  generate_background: 'dashboard.modeGenerateBg',
-  generate_exposure: 'dashboard.modeGenerateExposure',
-  generate_exposition_by_request: 'dashboard.modeExposureByRequest',
-  improve_image: 'dashboard.modeImprove',
-};
-
 export default function HistoryDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+  const getErrorMessage = useApiErrorMessage();
   const [record, setRecord] = useState<{
     taskId: string;
     mode: string;
@@ -30,9 +24,13 @@ export default function HistoryDetailPage() {
     inputImageBase64?: string | null;
   } | null>(null);
   const [resultImages, setResultImages] = useState<string[]>([]);
+  const [infographicItems, setInfographicItems] = useState<Array<{ text: string; position: string }>>([]);
+  const [activeImage, setActiveImage] = useState(0);
   const [resultError, setResultError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
+
+  const localeTag = locale === 'en' ? 'en-US' : 'ru-RU';
 
   useEffect(() => {
     if (!id) return;
@@ -44,7 +42,7 @@ export default function HistoryDetailPage() {
         const res = await getHistoryItem(Number(id));
         if (cancelled) return;
         if (!res.success || !res.data) {
-          setPageError('Analysis not found');
+          setPageError(t('history.notFound'));
           return;
         }
         const d = res.data;
@@ -59,25 +57,25 @@ export default function HistoryDetailPage() {
           const statusRes = await getProcessStatus(d.taskId);
           if (!cancelled && statusRes.success && statusRes.data?.result?.images) {
             setResultImages(statusRes.data.result.images);
+            setInfographicItems(statusRes.data.infographicItems ?? []);
+            setActiveImage(0);
           }
         }
         if (d.status === 'failed') {
-          const statusRes = await getProcessStatus(d.taskId);
-          if (!cancelled && statusRes.success && statusRes.data?.error) {
-            setResultError(statusRes.data.error);
-          }
+          setResultError(t('dashboard.queueFailed'));
         }
       } catch (err) {
         if (!cancelled) {
-          const apiErr = err as ApiError;
-          setPageError(apiErr.response?.data?.message ?? t('auth.connectionError'));
+          setPageError(getErrorMessage(err));
         }
       } finally {
         if (!cancelled) setLoading(false);
       }
     })();
-    return () => { cancelled = true; };
-  }, [id, t]);
+    return () => {
+      cancelled = true;
+    };
+  }, [id, t, getErrorMessage]);
 
   if (loading) {
     return (
@@ -90,7 +88,7 @@ export default function HistoryDetailPage() {
   if (pageError || !record) {
     return (
       <div className={styles.page}>
-        <p className={styles.error}>{pageError ?? 'Not found'}</p>
+        <p className={styles.error}>{pageError ?? t('history.notFound')}</p>
         <Link to="/history" className={styles.backLink}>
           <Button variant="outline">{t('common.back')}</Button>
         </Link>
@@ -102,31 +100,74 @@ export default function HistoryDetailPage() {
     record.inputImageBase64
       ? `data:image/png;base64,${record.inputImageBase64}`
       : getProcessInputImageUrl(record.taskId);
+  const activeResultImage = resultImages[activeImage] ?? resultImages[0] ?? null;
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link to="/history" className={styles.backLink}>{t('common.back')}</Link>
+        <div className={styles.headerTop}>
+          <Link to="/history" className={styles.backLink}>{t('common.back')}</Link>
+          <span className={styles.status} data-status={record.status}>{record.status}</span>
+        </div>
         <h1 className={styles.title}>{t('history.detailTitle')}</h1>
         <p className={styles.meta}>
-          {t(MODE_KEYS[record.mode] ?? record.mode)} · {record.status}
+          {t(getProcessModeLabelKey(record.mode))}
         </p>
       </header>
 
-      <Card className={styles.section}>
-        <h2 className={styles.sectionTitle}>{t('history.originalImage')}</h2>
-        <div className={styles.imgWrap}>
-          <img
-            src={inputImageSrc}
-            alt={t('history.originalImage')}
-            className={styles.img}
-          />
-        </div>
-      </Card>
-
-      {record.status === 'completed' && resultImages.length > 0 && (
+      <div className={styles.grid}>
         <Card className={styles.section}>
-          <ProcessResults images={resultImages} />
+          <h2 className={styles.sectionTitle}>{t('history.originalImage')}</h2>
+          <div className={styles.imgWrap}>
+            <img
+              src={inputImageSrc}
+              alt={t('history.originalImage')}
+              className={styles.img}
+            />
+          </div>
+        </Card>
+        {record.status === 'completed' && resultImages.length > 0 ? (
+          <Card className={styles.section}>
+            <h2 className={styles.sectionTitle}>{t('dashboard.resultTitle')}</h2>
+            {activeResultImage && (
+              <div className={styles.mediaFrame}>
+                <img src={activeResultImage} alt={t('dashboard.resultAlt', { n: activeImage + 1 })} className={styles.mediaImage} />
+              </div>
+            )}
+            {resultImages.length > 1 && (
+              <div className={styles.thumbRow}>
+                {resultImages.map((url, idx) => (
+                  <button
+                    key={`${url.slice(0, 32)}-${idx}`}
+                    type="button"
+                    className={`${styles.thumbBtn} ${activeImage === idx ? styles.thumbBtnActive : ''}`}
+                    onClick={() => setActiveImage(idx)}
+                  >
+                    <img src={url} alt="" className={styles.thumbImg} />
+                  </button>
+                ))}
+              </div>
+            )}
+          </Card>
+        ) : (
+          <Card className={styles.section}>
+            <h2 className={styles.sectionTitle}>{t('history.createdAt')}</h2>
+            <p className={styles.metaInfo}>{formatLocaleDateTime(record.createdAt, localeTag)}</p>
+          </Card>
+        )}
+      </div>
+
+      {record.status === 'completed' && infographicItems.length > 0 && (
+        <Card className={styles.section}>
+          <h2 className={styles.sectionTitle}>{t('history.infographicItems')}</h2>
+          <div className={styles.infoList}>
+            {infographicItems.map((item, idx) => (
+              <div key={`${item.position}-${item.text}-${idx}`} className={styles.infoItem}>
+                <span className={styles.infoText}>{item.text}</span>
+                <span className={styles.infoPos}>{item.position}</span>
+              </div>
+            ))}
+          </div>
         </Card>
       )}
 

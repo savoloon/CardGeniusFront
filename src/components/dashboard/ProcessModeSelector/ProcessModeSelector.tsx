@@ -1,15 +1,7 @@
 import type { ProcessMode } from '../../../services/api';
+import { PROCESS_MODE_OPTIONS } from '../../../constants/processModes';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import styles from './ProcessModeSelector.module.css';
-
-const MODE_KEYS: { value: ProcessMode; labelKey: string }[] = [
-  { value: 'remove_background', labelKey: 'modeRemoveBg' },
-  { value: 'generate_background', labelKey: 'modeGenerateBg' },
-  { value: 'generate_exposure', labelKey: 'modeGenerateExposure' },
-  { value: 'generate_exposition_by_request', labelKey: 'modeExposureByRequest' },
-  { value: 'improve_image', labelKey: 'modeImprove' },
-  { value: 'generate_infographic', labelKey: 'modeInfographic' },
-];
 
 interface ProcessModeSelectorProps {
   value: ProcessMode;
@@ -33,7 +25,7 @@ export default function ProcessModeSelector({
       )}
       <label className={styles.label} id="mode-label">{t('dashboard.modeLabel')}</label>
       <div className={styles.grid} role="group" aria-labelledby="mode-label">
-        {MODE_KEYS.map((mode) => (
+        {PROCESS_MODE_OPTIONS.map((mode) => (
           <button
             key={mode.value}
             type="button"

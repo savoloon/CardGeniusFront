@@ -7,6 +7,7 @@ interface ProcessResultsProps {
   /** When set with multiple images, show one main preview + thumbnail strip (controlled) */
   activeIndex?: number;
   onActiveIndexChange?: (index: number) => void;
+  hideTitle?: boolean;
 }
 
 export default function ProcessResults({
@@ -14,6 +15,7 @@ export default function ProcessResults({
   onDownload,
   activeIndex: controlledIndex,
   onActiveIndexChange,
+  hideTitle = false,
 }: ProcessResultsProps) {
   const { t } = useLanguage();
   if (images.length === 0) return null;
@@ -39,7 +41,7 @@ export default function ProcessResults({
     const url = images[idx];
     return (
       <div className={styles.wrapper}>
-        <h3 className={styles.title}>{t('dashboard.resultTitle')}</h3>
+        {!hideTitle && <h3 className={styles.title}>{t('dashboard.resultTitle')}</h3>}
         <div className={styles.singleMain}>
           <div className={styles.imgWrap}>
             <img src={url} alt={t('dashboard.resultAlt', { n: idx + 1 })} className={styles.img} />
@@ -72,7 +74,7 @@ export default function ProcessResults({
 
   return (
     <div className={styles.wrapper}>
-      <h3 className={styles.title}>{t('dashboard.resultTitle')}</h3>
+      {!hideTitle && <h3 className={styles.title}>{t('dashboard.resultTitle')}</h3>}
       <div className={styles.grid}>
         {images.map((url, i) => (
           <div key={i} className={styles.item}>

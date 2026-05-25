@@ -1,10 +1,14 @@
 .page {
-  max-width: 640px;
+  max-width: 1180px;
   margin: 0 auto;
 }
 
 .header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: flex-start;
 }
 
 .title {
@@ -18,6 +22,40 @@
   margin: 0;
   font-size: 0.9375rem;
   color: var(--color-text-muted);
+}
+
+.primaryLink {
+  text-decoration: none;
+}
+
+.statsHint {
+  margin: 0 0 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.statCard {
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.statLabel {
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+}
+
+.statValue {
+  font-size: 1.25rem;
+  color: var(--color-text);
 }
 
 .loading,
@@ -52,13 +90,9 @@
 }
 
 .list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.list li {
-  margin-bottom: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 .cardLink {
@@ -69,6 +103,7 @@
 
 .card {
   transition: box-shadow 0.2s ease, transform 0.15s ease;
+  padding: 1rem;
 }
 
 .cardLink:hover .card {
@@ -103,34 +138,6 @@
   color: var(--color-text-muted);
 }
 
-.select,
-.dateInput {
-  padding: 0.5rem 0.75rem;
-  font-size: 0.9375rem;
-  font-family: inherit;
-  color: var(--color-text);
-  background: var(--color-bg-input);
-  border: 1px solid var(--color-bg-input);
-  border-radius: var(--radius-md);
-  min-width: 140px;
-}
-
-.select:focus,
-.dateInput:focus {
-  outline: none;
-  border-color: var(--color-accent);
-  box-shadow: 0 0 0 2px var(--color-accent-muted);
-}
-
-.select:hover,
-.dateInput:hover {
-  border-color: var(--color-text-dim);
-}
-
-.dateInput {
-  min-width: 160px;
-}
-
 .filtersActions {
   display: flex;
   flex-wrap: wrap;
@@ -152,12 +159,19 @@
   text-decoration: underline;
 }
 
-.row {
+.rowTop {
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.65rem;
+}
+
+.rowBottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
 }
 
 .mode {
@@ -186,4 +200,25 @@
 .date {
   font-size: 0.8125rem;
   color: var(--color-text-muted);
+}
+
+.openHint {
+  font-size: 0.8125rem;
+  color: var(--color-text-dim);
+}
+
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .list {
+    grid-template-columns: 1fr;
+  }
 }
