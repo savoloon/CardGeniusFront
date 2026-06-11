@@ -1,15 +1,15 @@
-import { useState, useCallback, useRef } from 'react';
-import { Button, Input } from '../../components/ui';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
+import { Button, PageBlocker } from '../../components/ui';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useProcessPolling } from '../../hooks/useProcessPolling';
 import { useApiErrorMessage } from '../../hooks/useApiErrorMessage';
+import { clearAllDrafts } from '../../features/imageEditor/variantDraftStorage';
+import VariantEditor from '../../features/imageEditor/VariantEditor';
 import ImageUploadZone from '../../components/dashboard/ImageUploadZone';
 import ProcessModeSelector from '../../components/dashboard/ProcessModeSelector';
 import ProcessOptions from '../../components/dashboard/ProcessOptions';
 import ProcessQueueStatus from '../../components/dashboard/ProcessQueueStatus';
 import ProcessResults from '../../components/dashboard/ProcessResults';
-import InfographicEditor from '../../components/dashboard/InfographicEditor';
 import {
   submitProcess,
   generateDescription as apiGenerateDescription,
@@ -17,48 +17,62 @@ import {
 } from '../../services/api';
 import styles from './DashboardPage.module.css';
 
-const NARROW_BREAKPOINT = 900;
-
-type MainTab = 'process' | 'copy';
-type MobileWorkspaceTab = 'canvas' | 'controls';
+type WorkflowPhase = 'setup' | 'processing' | 'results';
 
 export default function DashboardPage() {
   const { t } = useLanguage();
   const getErrorMessage = useApiErrorMessage();
-  const isNarrow = useMediaQuery(`(max-width: ${NARROW_BREAKPOINT - 1}px)`);
   const {
     queueStatus,
+    variants: processVariants,
+    updateVariant,
     resultImages,
-    infographicItemsByVariant,
     activeResultIndex,
     setActiveResultIndex,
+    resultSessionId,
     startPolling,
     stopPolling,
     resetResults,
+    restoreWorkspaceFromMeta,
   } = useProcessPolling();
+
+  const variantDirtyRef = useRef(false);
+  const [sessionRestoredNotice, setSessionRestoredNotice] = useState(false);
+
+  useEffect(() => {
+    void restoreWorkspaceFromMeta().then((ok) => {
+      if (ok) setSessionRestoredNotice(true);
+    });
+  }, [restoreWorkspaceFromMeta]);
+
+  useEffect(() => {
+    const onBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!variantDirtyRef.current) return;
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => window.removeEventListener('beforeunload', onBeforeUnload);
+  }, []);
 
   const previewUrlRef = useRef<string | null>(null);
   const [image, setImage] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [mode, setMode] = useState<ProcessMode>('remove_background');
-  const [variants, setVariants] = useState(1);
+  const [includeCardTexts, setIncludeCardTexts] = useState(false);
+  const [variantBatchCount, setVariantBatchCount] = useState(1);
   const [prompt, setPrompt] = useState('');
   const [productName, setProductName] = useState('');
   const [productDescription, setProductDescription] = useState('');
+  const [batchSizeTitle, setBatchSizeTitle] = useState(1);
+  const [batchSizeDescription, setBatchSizeDescription] = useState(1);
   const [submitting, setSubmitting] = useState(false);
+  const [textsLoading, setTextsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [descProductName, setDescProductName] = useState('');
-  const [descProductDescription, setDescProductDescription] = useState('');
-  const [descBatchTitle, setDescBatchTitle] = useState(1);
-  const [descBatchDescription, setDescBatchDescription] = useState(1);
-  const [descLoading, setDescLoading] = useState(false);
-  const [descError, setDescError] = useState<string | null>(null);
   const [descTitles, setDescTitles] = useState<string[]>([]);
   const [descDescriptions, setDescDescriptions] = useState<string[]>([]);
 
-  const [mainTab, setMainTab] = useState<MainTab>('process');
-  const [mobileWorkspaceTab, setMobileWorkspaceTab] = useState<MobileWorkspaceTab>('canvas');
+  const needsProductFields = includeCardTexts || mode === 'generate_infographic';
 
   const clearPreview = useCallback(() => {
     if (previewUrlRef.current) {
@@ -79,6 +93,9 @@ export default function DashboardPage() {
       setError(null);
       stopPolling();
       resetResults();
+      clearAllDrafts();
+      setDescTitles([]);
+      setDescDescriptions([]);
     },
     [clearPreview, stopPolling, resetResults]
   );
@@ -88,6 +105,9 @@ export default function DashboardPage() {
     setError(null);
     stopPolling();
     resetResults();
+    clearAllDrafts();
+    setDescTitles([]);
+    setDescDescriptions([]);
   }, [clearPreview, stopPolling, resetResults]);
 
   const handleSubmit = async () => {
@@ -99,8 +119,8 @@ export default function DashboardPage() {
       setError(t('dashboard.enterExpositionPrompt'));
       return;
     }
-    if (mode === 'generate_infographic' && (!productName.trim() || !productDescription.trim())) {
-      setError(t('dashboard.infographicNameDescRequired'));
+    if (needsProductFields && (!productName.trim() || !productDescription.trim())) {
+      setError(t('dashboard.productFieldsRequired'));
       return;
     }
 
@@ -108,34 +128,76 @@ export default function DashboardPage() {
     setError(null);
     stopPolling();
     resetResults();
+    clearAllDrafts();
+    setDescTitles([]);
+    setDescDescriptions([]);
+
+    let imageOk = false;
 
     try {
-      const res = await submitProcess(image, mode, {
+      const textsPromise = includeCardTexts
+        ? (async () => {
+            setTextsLoading(true);
+            try {
+              const res = await apiGenerateDescription(
+                productName.trim(),
+                productDescription.trim(),
+                {
+                  batchSizeTitle,
+                  batchSizeDescription,
+                }
+              );
+              if (res.success && res.data) {
+                setDescTitles(res.data.titles || []);
+                setDescDescriptions(res.data.descriptions || []);
+                return true;
+              }
+              setError(res.message ?? t('dashboard.descriptionError'));
+              return false;
+            } catch (err) {
+              setError(getErrorMessage(err) || t('dashboard.descriptionError'));
+              return false;
+            } finally {
+              setTextsLoading(false);
+            }
+          })()
+        : Promise.resolve(true);
+
+      const imagePromise = submitProcess(image, mode, {
         variants:
           mode === 'generate_background' ||
           mode === 'generate_exposure' ||
           mode === 'generate_exposition_by_request' ||
           mode === 'generate_infographic'
-            ? variants
+            ? variantBatchCount
             : undefined,
         prompt:
           mode === 'generate_exposition_by_request' || mode === 'generate_infographic'
             ? prompt
             : undefined,
         productName: mode === 'generate_infographic' ? productName.trim() : undefined,
-        productDescription: mode === 'generate_infographic' ? productDescription.trim() : undefined,
+        productDescription:
+          mode === 'generate_infographic' ? productDescription.trim() : undefined,
       });
 
+      const [imageRes, textsOk] = await Promise.all([imagePromise, textsPromise]);
+
       const taskIds =
-        res.success && res.data?.taskIds?.length
-          ? res.data.taskIds
-          : res.data?.taskId
-            ? [res.data.taskId]
+        imageRes.success && imageRes.data?.taskIds?.length
+          ? imageRes.data.taskIds
+          : imageRes.data?.taskId
+            ? [imageRes.data.taskId]
             : [];
-      if (res.success && taskIds.length > 0) {
+
+      if (imageRes.success && taskIds.length > 0) {
         startPolling(taskIds);
-      } else {
-        setError(res.message ?? t('dashboard.submitError'));
+        imageOk = true;
+      } else if (!imageRes.success) {
+        setError(imageRes.message ?? t('dashboard.submitError'));
+      }
+
+      if (!imageOk && !textsOk) {
+        setError((prev) => prev ?? t('dashboard.submitError'));
       }
     } catch (err) {
       setError(getErrorMessage(err));
@@ -147,455 +209,297 @@ export default function DashboardPage() {
   const handleNewTask = () => {
     stopPolling();
     resetResults();
-  };
-
-  const handleGenerateDescription = async () => {
-    const name = descProductName.trim();
-    const desc = descProductDescription.trim();
-    if (!name || !desc) return;
-    setDescLoading(true);
-    setDescError(null);
+    clearAllDrafts();
+    setSessionRestoredNotice(false);
     setDescTitles([]);
     setDescDescriptions([]);
-    try {
-      const res = await apiGenerateDescription(name, desc, {
-        batchSizeTitle: descBatchTitle,
-        batchSizeDescription: descBatchDescription,
-      });
-      if (res.success && res.data) {
-        setDescTitles(res.data.titles || []);
-        setDescDescriptions(res.data.descriptions || []);
-      } else {
-        setDescError(res.message ?? t('dashboard.descriptionError'));
-      }
-    } catch (err) {
-      setDescError(getErrorMessage(err) || t('dashboard.descriptionError'));
-    } finally {
-      setDescLoading(false);
-    }
+    setError(null);
   };
 
-  const isProcessing = submitting || queueStatus === 'pending';
+  const handleActiveIndexChange = useCallback(
+    (index: number) => {
+      if (variantDirtyRef.current) {
+        const stay = !window.confirm(t('dashboard.unsavedSwitchConfirm'));
+        if (stay) return;
+      }
+      setActiveResultIndex(index);
+    },
+    [setActiveResultIndex, t]
+  );
+
+  const isProcessing = submitting || textsLoading || queueStatus === 'pending';
+
+  const hasImageResults = queueStatus === 'completed' && resultImages.length > 0;
+  const hasTextResults = descTitles.length > 0 || descDescriptions.length > 0;
+  const hasAnyResults = hasImageResults || hasTextResults;
+
+  const phase: WorkflowPhase = useMemo(() => {
+    if (isProcessing) return 'processing';
+    if (hasAnyResults || queueStatus === 'failed') return 'results';
+    return 'setup';
+  }, [isProcessing, hasAnyResults, queueStatus]);
 
   const processDisabled =
     !image ||
     isProcessing ||
     (mode === 'generate_exposition_by_request' && !prompt.trim()) ||
-    (mode === 'generate_infographic' && (!productName.trim() || !productDescription.trim()));
+    (needsProductFields && (!productName.trim() || !productDescription.trim()));
 
-  const activeImageUrl = resultImages[activeResultIndex] ?? '';
-  const activeInfographicItems = infographicItemsByVariant[activeResultIndex] ?? [];
-  const showInfographicEditor = activeInfographicItems.length > 0;
+  const activeVariant = processVariants[activeResultIndex] ?? null;
+  const showImageEditor =
+    hasImageResults && activeVariant != null && resultSessionId != null;
 
   const optionsProps = {
     mode,
-    variants,
+    variants: variantBatchCount,
+    onVariantsChange: setVariantBatchCount,
     prompt,
     productName,
     productDescription,
-    onVariantsChange: setVariants,
     onPromptChange: setPrompt,
     onProductNameChange: setProductName,
     onProductDescriptionChange: setProductDescription,
+    showProductFields: needsProductFields,
+    showTextBatchOptions: includeCardTexts,
+    batchSizeTitle,
+    batchSizeDescription,
+    onBatchSizeTitleChange: setBatchSizeTitle,
+    onBatchSizeDescriptionChange: setBatchSizeDescription,
     disabled: isProcessing,
     hideSectionTitle: true as const,
   };
 
-  const optionsAccordion = (
-    <details className={styles.paramDetails} open>
-      <summary className={styles.paramSummary}>{t('dashboard.stepParams')}</summary>
-      <div className={styles.paramBody}>
-        <ProcessOptions {...optionsProps} className={styles.optionsEmbed} />
-      </div>
-    </details>
+  const setupStepIndicator = (
+    <ol className={styles.stepper} aria-label={t('dashboard.workflowStepsAria')}>
+      <li className={`${styles.stepperItem} ${styles.stepperItemActive}`}>
+        <span className={styles.stepperDot} aria-hidden />
+        {t('dashboard.workflowStepSetup')}
+      </li>
+      <li className={styles.stepperItem}>
+        <span className={styles.stepperDot} aria-hidden />
+        {t('dashboard.workflowStepProcess')}
+      </li>
+      <li className={styles.stepperItem}>
+        <span className={styles.stepperDot} aria-hidden />
+        {t('dashboard.workflowStepResult')}
+      </li>
+    </ol>
   );
 
-  const pipelineUpload = (
-    <div className={styles.pipelineSection}>
-      <div className={styles.stepHeader}>
-        <span className={styles.stepBadge} aria-hidden>
-          1
-        </span>
-        <h2 className={styles.stepHeading}>{t('dashboard.stepImage')}</h2>
-      </div>
-      <ImageUploadZone
-        image={image}
-        previewUrl={previewUrl}
-        onSelect={handleSelectImage}
-        onClear={handleClear}
-        disabled={isProcessing}
-        compact
-      />
-    </div>
-  );
-
-  const pipelineMode = (
-    <div className={styles.pipelineSection}>
-      <div className={styles.stepHeader}>
-        <span className={styles.stepBadge} aria-hidden>
-          2
-        </span>
-        <h2 className={styles.stepHeading}>{t('dashboard.stepMode')}</h2>
-      </div>
-      <ProcessModeSelector
-        value={mode}
-        onChange={setMode}
-        disabled={isProcessing}
-        hideSectionTitle
-      />
-    </div>
-  );
-
-  const pipelineRun = (
-    <>
-      <div className={styles.pipelineDivider} aria-hidden />
-      <div className={styles.pipelineSection}>
-        <div className={styles.stepHeader}>
-          <span className={styles.stepBadge} aria-hidden>
-            3
-          </span>
-          <h2 className={styles.stepHeading}>{t('dashboard.stepRun')}</h2>
+  const setupView = (
+    <section className={styles.setup} aria-label={t('dashboard.workflowStepSetup')}>
+      <header className={styles.setupTopBar}>
+        <div className={styles.setupIntro}>
+          <h1 className={styles.title}>{t('dashboard.title')}</h1>
+          <p className={styles.subtitle}>{t('dashboard.subtitle')}</p>
         </div>
-        <Button
-          className={styles.runButton}
-          fullWidth
-          loading={isProcessing}
-          disabled={processDisabled}
-          onClick={handleSubmit}
-        >
-          {t('dashboard.process')}
-        </Button>
-        {error && (
-          <p className={styles.error} role="alert">
-            {error}
-          </p>
-        )}
-      </div>
-    </>
-  );
+        {setupStepIndicator}
+      </header>
 
-  const leftRailDesktop = (
-    <div className={styles.pipelineCard}>
-      {pipelineUpload}
-      <div className={styles.pipelineDivider} aria-hidden />
-      {pipelineMode}
-      {pipelineRun}
-    </div>
-  );
-
-  const mobileControlsColumn = (
-    <div className={styles.pipelineCard}>
-      {pipelineUpload}
-      <div className={styles.pipelineDivider} aria-hidden />
-      {pipelineMode}
-      <div className={styles.pipelineDivider} aria-hidden />
-      {optionsAccordion}
-      {pipelineRun}
-    </div>
-  );
-
-  const workspaceBody = (
-    <>
-      {queueStatus === 'pending' && (
-        <div
-          className={styles.stageFrame}
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-          aria-label={t('dashboard.stageSkeletonAria')}
-        >
-          <div className={styles.stageSkeleton} aria-hidden />
-          <div className={styles.workspaceCardInner}>
-            <ProcessQueueStatus status="pending" />
+      <div className={styles.setupWorkspace}>
+        <div className={styles.setupCanvas}>
+          <div className={styles.setupCanvasHeader}>
+            <h2 className={styles.setupSectionTitle}>{t('dashboard.stepImage')}</h2>
+          </div>
+          <div className={styles.setupCanvasBody}>
+            <ImageUploadZone
+              image={image}
+              previewUrl={previewUrl}
+              onSelect={handleSelectImage}
+              onClear={handleClear}
+              disabled={isProcessing}
+              hero
+            />
           </div>
         </div>
-      )}
 
-      {queueStatus === 'failed' && (
-        <div className={styles.stageFrame}>
-          <div className={styles.workspaceCardInner}>
-            <ProcessQueueStatus status="failed" />
-          </div>
-        </div>
-      )}
-
-      {queueStatus === 'completed' && resultImages.length > 0 && (
-        <div className={`${styles.stageFrame} ${styles.stageFrameResults}`}>
-          <div className={styles.workspaceCardInner}>
-            {showInfographicEditor && activeImageUrl && (
-              <InfographicEditor
-                key={activeImageUrl}
-                imageUrl={activeImageUrl}
-                recommendedItems={activeInfographicItems}
+        <aside className={styles.setupConfig}>
+          <div className={styles.setupConfigScroll}>
+            <section className={styles.setupConfigSection} aria-labelledby="setup-mode-heading">
+              <h2 id="setup-mode-heading" className={styles.setupSectionTitle}>
+                {t('dashboard.stepMode')}
+              </h2>
+              <ProcessModeSelector
+                value={mode}
+                onChange={setMode}
+                includeCardTexts={includeCardTexts}
+                onIncludeCardTextsChange={setIncludeCardTexts}
+                disabled={isProcessing}
+                hideSectionTitle
+                dense
               />
+            </section>
+
+            <div className={styles.setupConfigDivider} aria-hidden />
+
+            <section className={styles.setupConfigSection} aria-labelledby="setup-params-heading">
+              <h2 id="setup-params-heading" className={styles.setupSectionTitle}>
+                {t('dashboard.stepParams')}
+              </h2>
+              <ProcessOptions {...optionsProps} className={styles.optionsEmbed} compact />
+            </section>
+          </div>
+
+          <footer className={styles.setupConfigFooter}>
+            {error && (
+              <p className={styles.error} role="alert">
+                {error}
+              </p>
             )}
+            <Button
+              className={styles.runButton}
+              loading={isProcessing}
+              disabled={processDisabled}
+              onClick={handleSubmit}
+              fullWidth
+            >
+              {t('dashboard.process')}
+            </Button>
+          </footer>
+        </aside>
+      </div>
+    </section>
+  );
+
+  const textResultsPanel = hasTextResults && (
+    <aside className={styles.textResults} aria-label={t('dashboard.textResultsAria')}>
+      <h2 className={styles.textResultsTitle}>{t('dashboard.cardTextsResultTitle')}</h2>
+      {descTitles.length > 0 && (
+        <div className={styles.textBlock}>
+          <h3 className={styles.textBlockHeading}>{t('dashboard.titlesResult')}</h3>
+          <ul className={styles.textList}>
+            {descTitles.map((text, i) => (
+              <li key={`title-${i}`}>
+                <button
+                  type="button"
+                  className={styles.copyChip}
+                  onClick={() => void navigator.clipboard.writeText(text)}
+                  title={t('dashboard.copyToClipboard')}
+                >
+                  {text}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {descDescriptions.length > 0 && (
+        <div className={styles.textBlock}>
+          <h3 className={styles.textBlockHeading}>{t('dashboard.descriptionsResult')}</h3>
+          <ul className={styles.textList}>
+            {descDescriptions.map((text, i) => (
+              <li key={`desc-${i}`}>
+                <button
+                  type="button"
+                  className={styles.copyChip}
+                  onClick={() => void navigator.clipboard.writeText(text)}
+                  title={t('dashboard.copyToClipboard')}
+                >
+                  {text}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </aside>
+  );
+
+  const resultsView = (
+    <section className={styles.results} aria-label={t('dashboard.workflowStepResult')}>
+      <header className={styles.resultsHeader}>
+        <div>
+          <h2 className={styles.resultsTitle}>{t('dashboard.resultsPageTitle')}</h2>
+          <p className={styles.resultsSubtitle}>{t('dashboard.resultsPageSubtitle')}</p>
+        </div>
+        <Button variant="outline" onClick={handleNewTask}>
+          {t('dashboard.newImage')}
+        </Button>
+      </header>
+
+      {error && (
+        <p className={styles.error} role="alert">
+          {error}
+        </p>
+      )}
+
+      {queueStatus === 'failed' && !hasImageResults && (
+        <div className={styles.failedBanner}>
+          <ProcessQueueStatus status="failed" />
+          <Button variant="outline" onClick={handleNewTask}>
+            {t('dashboard.tryAgain')}
+          </Button>
+        </div>
+      )}
+
+      <div
+        className={`${styles.resultsBody} ${hasTextResults ? styles.resultsBodyWithTexts : ''}`}
+      >
+        <div className={styles.resultsMain}>
+          {sessionRestoredNotice && (
+            <p className={styles.storageWarning} role="status">
+              {t('dashboard.sessionRestored')}
+            </p>
+          )}
+
+          {showImageEditor && activeVariant && (
+            <div className={styles.editorBlock}>
+              <VariantEditor
+                key={activeVariant.id}
+                variant={activeVariant}
+                variantIndex={activeResultIndex}
+                variantCount={processVariants.length}
+                onVariantChange={updateVariant}
+                onDirtyChange={(d) => {
+                  variantDirtyRef.current = d;
+                }}
+              />
+            </div>
+          )}
+
+          {hasImageResults && (
             <div className={styles.resultsFade}>
               <ProcessResults
                 images={resultImages}
+                hideDownload={showImageEditor}
+                thumbnailsOnly={showImageEditor && resultImages.length > 1}
+                variantBadges={processVariants.map((v) =>
+                  v.displayBase === 'saved' ? 'saved' : 'original'
+                )}
                 {...(resultImages.length > 1
                   ? {
                       activeIndex: activeResultIndex,
-                      onActiveIndexChange: setActiveResultIndex,
+                      onActiveIndexChange: handleActiveIndexChange,
                     }
                   : {})}
               />
             </div>
-            <Button variant="outline" className={styles.newTaskBtn} onClick={handleNewTask}>
-              {t('dashboard.newImage')}
-            </Button>
-          </div>
-        </div>
-      )}
+          )}
 
-      {!queueStatus && resultImages.length === 0 && (
-        <div className={styles.stageFrame}>
-          <div className={styles.empty}>
-            <span className={styles.emptyIcon} aria-hidden>
-              ◇
-            </span>
-            <p>{t('dashboard.emptyHint')}</p>
-          </div>
+          {!hasImageResults && hasTextResults && (
+            <div className={styles.textsOnlyNotice}>
+              <p>{t('dashboard.textsOnlyResultHint')}</p>
+            </div>
+          )}
         </div>
-      )}
-    </>
-  );
 
-  const copyPanel = (
-    <div className={styles.cardDescription}>
-      <h2 className={styles.stepHeading}>{t('dashboard.descriptionSectionTitle')}</h2>
-      <p className={styles.descriptionSubtitle}>{t('dashboard.descriptionSectionSubtitle')}</p>
-      <div className={styles.descriptionFields}>
-        <Input
-          label={t('dashboard.productNameLabel')}
-          placeholder={t('dashboard.productNamePlaceholder')}
-          value={descProductName}
-          onChange={(e) => setDescProductName(e.target.value)}
-          disabled={descLoading}
-        />
-        <Input
-          label={t('dashboard.productDescriptionLabel')}
-          placeholder={t('dashboard.productDescriptionPlaceholder')}
-          value={descProductDescription}
-          onChange={(e) => setDescProductDescription(e.target.value)}
-          disabled={descLoading}
-        />
-        <div className={styles.batchRow}>
-          <label className={styles.batchLabel}>
-            <span>{t('dashboard.batchSizeTitleLabel')}</span>
-            <select
-              value={descBatchTitle}
-              onChange={(e) => setDescBatchTitle(Number(e.target.value))}
-              disabled={descLoading}
-              className={styles.batchSelect}
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={styles.batchLabel}>
-            <span>{t('dashboard.batchSizeDescriptionLabel')}</span>
-            <select
-              value={descBatchDescription}
-              onChange={(e) => setDescBatchDescription(Number(e.target.value))}
-              disabled={descLoading}
-              className={styles.batchSelect}
-            >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
-                <option key={n} value={n}>
-                  {n}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        {textResultsPanel}
       </div>
-      <Button
-        fullWidth
-        loading={descLoading}
-        disabled={!descProductName.trim() || !descProductDescription.trim() || descLoading}
-        onClick={handleGenerateDescription}
-      >
-        {t('dashboard.generateDescriptionBtn')}
-      </Button>
-      {descError && (
-        <p className={styles.error} role="alert">
-          {descError}
-        </p>
-      )}
-      {(descTitles.length > 0 || descDescriptions.length > 0) && (
-        <div className={styles.descriptionResults}>
-          {descTitles.length > 0 && (
-            <div className={styles.descriptionBlock}>
-              <h3 className={styles.descriptionBlockTitle}>{t('dashboard.titlesResult')}</h3>
-              <ul className={styles.descriptionList}>
-                {descTitles.map((text, i) => (
-                  <li key={i}>{text}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {descDescriptions.length > 0 && (
-            <div className={styles.descriptionBlock}>
-              <h3 className={styles.descriptionBlockTitle}>{t('dashboard.descriptionsResult')}</h3>
-              <ul className={styles.descriptionList}>
-                {descDescriptions.map((text, i) => (
-                  <li key={i}>{text}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    </section>
   );
 
   return (
     <div className={styles.page}>
       <div className={styles.container}>
-        <header className={styles.header}>
-          <div className={styles.headerRow}>
-            <h1 className={styles.title}>{t('dashboard.title')}</h1>
-          </div>
-          <p className={styles.subtitle}>{t('dashboard.subtitle')}</p>
-        </header>
+        {phase === 'setup' && setupView}
+        {phase === 'results' && resultsView}
 
-        <div
-          className={styles.mainTabs}
-          role="tablist"
-          aria-label={t('dashboard.mainTabsAria')}
-        >
-          <button
-            type="button"
-            role="tab"
-            id="tab-main-process"
-            aria-selected={mainTab === 'process'}
-            aria-controls="panel-main-process"
-            tabIndex={mainTab === 'process' ? 0 : -1}
-            className={`${styles.mainTab} ${mainTab === 'process' ? styles.mainTabActive : ''}`}
-            onClick={() => setMainTab('process')}
-          >
-            {t('dashboard.tabMainProcess')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            id="tab-main-copy"
-            aria-selected={mainTab === 'copy'}
-            aria-controls="panel-main-copy"
-            tabIndex={mainTab === 'copy' ? 0 : -1}
-            className={`${styles.mainTab} ${mainTab === 'copy' ? styles.mainTabActive : ''}`}
-            onClick={() => setMainTab('copy')}
-          >
-            {t('dashboard.tabMainCopy')}
-          </button>
-        </div>
-
-        {mainTab === 'copy' && (
-          <div
-            id="panel-main-copy"
-            role="tabpanel"
-            aria-labelledby="tab-main-copy"
-            className={styles.copyPanelWrap}
-          >
-            {copyPanel}
-          </div>
-        )}
-
-        {mainTab === 'process' && (
-          <div
-            id="panel-main-process"
-            role="tabpanel"
-            aria-labelledby="tab-main-process"
-            className={styles.processPanel}
-          >
-            {isNarrow && (
-              <div
-                className={styles.workspaceTabs}
-                role="tablist"
-                aria-label={t('dashboard.workspaceTabsAria')}
-              >
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={mobileWorkspaceTab === 'canvas'}
-                  className={`${styles.workspaceTab} ${mobileWorkspaceTab === 'canvas' ? styles.workspaceTabActive : ''}`}
-                  onClick={() => setMobileWorkspaceTab('canvas')}
-                >
-                  {t('dashboard.tabCanvas')}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  aria-selected={mobileWorkspaceTab === 'controls'}
-                  className={`${styles.workspaceTab} ${mobileWorkspaceTab === 'controls' ? styles.workspaceTabActive : ''}`}
-                  onClick={() => setMobileWorkspaceTab('controls')}
-                >
-                  {t('dashboard.tabControls')}
-                </button>
-              </div>
-            )}
-
-            <div className={styles.shellWrap}>
-              <div className={styles.shell}>
-                {!isNarrow && (
-                  <aside className={styles.leftRail} aria-label={t('dashboard.pipelinePanelAria')}>
-                    {leftRailDesktop}
-                  </aside>
-                )}
-
-                {isNarrow && mobileWorkspaceTab === 'controls' && (
-                  <div className={styles.controlsColumn}>{mobileControlsColumn}</div>
-                )}
-
-                {(!isNarrow || mobileWorkspaceTab === 'canvas') && (
-                  <section className={styles.stage} aria-label={t('dashboard.tabCanvas')}>
-                    {workspaceBody}
-                  </section>
-                )}
-
-                {!isNarrow && (
-                  <aside className={styles.rightRail} aria-label={t('dashboard.paramsPanelAria')}>
-                    <div className={styles.rightRailInner}>{optionsAccordion}</div>
-                  </aside>
-                )}
-              </div>
-              {isProcessing && (
-                <div
-                  className={styles.busyOverlay}
-                  role="status"
-                  aria-live="polite"
-                  aria-busy="true"
-                  aria-label={t('dashboard.processingOverlayAria')}
-                />
-              )}
-            </div>
-
-            {isNarrow && mobileWorkspaceTab === 'canvas' && (
-              <div className={styles.mobileStickyBar}>
-                {isProcessing ? (
-                  <Button type="button" fullWidth loading disabled>
-                    {t('dashboard.process')}
-                  </Button>
-                ) : processDisabled ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    fullWidth
-                    onClick={() => setMobileWorkspaceTab('controls')}
-                  >
-                    {t('dashboard.mobileOpenControls')}
-                  </Button>
-                ) : (
-                  <Button type="button" fullWidth onClick={handleSubmit}>
-                    {t('dashboard.process')}
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
+        {phase === 'processing' && (
+          <PageBlocker
+            title={t('dashboard.processingTitle')}
+            subtitle={t('dashboard.processingSubtitle')}
+            ariaLabel={t('dashboard.processingOverlayAria')}
+          />
         )}
       </div>
     </div>

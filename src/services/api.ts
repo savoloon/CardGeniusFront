@@ -439,3 +439,62 @@ export function getProcessInputImageUrl(taskId: string): string {
   const base = import.meta.env.VITE_API_URL || '/api';
   return `${base}/process/${taskId}/input-image`;
 }
+
+export function getProcessResultImageUrl(taskId: string, variantIndex = 0): string {
+  const base = import.meta.env.VITE_API_URL || '/api';
+  return `${base}/process/${taskId}/result/${variantIndex}`;
+}
+
+export function getProcessSavedImageUrl(taskId: string, variantIndex: number): string {
+  const base = import.meta.env.VITE_API_URL || '/api';
+  return `${base}/process/${taskId}/saved-image/${variantIndex}`;
+}
+
+export interface VariantSaveResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    taskId: string;
+    variantIndex: number;
+    revision: number;
+    textLayers: unknown[];
+    savedImageUrl: string;
+  };
+}
+
+export async function getVariantSave(
+  taskId: string,
+  variantIndex: number
+): Promise<VariantSaveResponse> {
+  return request<VariantSaveResponse>(`/process/${taskId}/variants/${variantIndex}/save`);
+}
+
+export async function saveVariantEdit(
+  taskId: string,
+  variantIndex: number,
+  imageBlob: Blob,
+  textLayers: unknown[]
+): Promise<VariantSaveResponse> {
+  const formData = new FormData();
+  formData.append('image', imageBlob, 'edited.png');
+  formData.append('text_layers', JSON.stringify(textLayers));
+
+  const response = await fetchWithAuth(
+    `${API_URL}/process/${taskId}/variants/${variantIndex}/save`,
+    { method: 'POST', body: formData }
+  );
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.message || response.statusText) as Error & ApiError;
+    error.response = { status: response.status, data };
+    throw error;
+  }
+  return data;
+}
+
+export async function deleteVariantSave(
+  taskId: string,
+  variantIndex: number
+): Promise<{ success: boolean; message?: string }> {
+  return request(`/process/${taskId}/variants/${variantIndex}/save`, { method: 'DELETE' });
+}

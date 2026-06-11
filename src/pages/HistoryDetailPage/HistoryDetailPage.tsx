@@ -9,7 +9,12 @@ import {
   getHistoryItem,
   getProcessStatus,
   getProcessInputImageUrl,
+  getVariantSave,
+  getProcessSavedImageUrl,
 } from '../../services/api';
+import VariantEditor from '../../features/imageEditor/VariantEditor';
+import { buildProcessVariant, type ProcessVariant } from '../../types/processVariant';
+import type { TextLayer } from '../../types/infographicEditor';
 import styles from './HistoryDetailPage.module.css';
 
 export default function HistoryDetailPage() {
@@ -23,8 +28,7 @@ export default function HistoryDetailPage() {
     createdAt: string;
     inputImageBase64?: string | null;
   } | null>(null);
-  const [resultImages, setResultImages] = useState<string[]>([]);
-  const [infographicItems, setInfographicItems] = useState<Array<{ text: string; position: string }>>([]);
+  const [processVariants, setProcessVariants] = useState<ProcessVariant[]>([]);
   const [activeImage, setActiveImage] = useState(0);
   const [resultError, setResultError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -56,8 +60,33 @@ export default function HistoryDetailPage() {
         if (d.status === 'completed') {
           const statusRes = await getProcessStatus(d.taskId);
           if (!cancelled && statusRes.success && statusRes.data?.result?.images) {
-            setResultImages(statusRes.data.result.images);
-            setInfographicItems(statusRes.data.infographicItems ?? []);
+            const images = statusRes.data.result.images;
+            const items = statusRes.data.infographicItems ?? [];
+            const list: ProcessVariant[] = [];
+            for (let i = 0; i < images.length; i++) {
+              let variant = buildProcessVariant({
+                taskId: d.taskId,
+                resultIndex: i,
+                originalUrl: images[i],
+                infographicItems: items,
+              });
+              try {
+                const saveRes = await getVariantSave(d.taskId, i);
+                if (saveRes.success && saveRes.data) {
+                  variant = {
+                    ...variant,
+                    displayBase: 'saved',
+                    savedUrl: getProcessSavedImageUrl(d.taskId, i),
+                    savedRevision: saveRes.data.revision,
+                    textLayers: (saveRes.data.textLayers ?? []) as TextLayer[],
+                  };
+                }
+              } catch {
+                /* no save */
+              }
+              list.push(variant);
+            }
+            setProcessVariants(list);
             setActiveImage(0);
           }
         }
@@ -100,7 +129,12 @@ export default function HistoryDetailPage() {
     record.inputImageBase64
       ? `data:image/png;base64,${record.inputImageBase64}`
       : getProcessInputImageUrl(record.taskId);
-  const activeResultImage = resultImages[activeImage] ?? resultImages[0] ?? null;
+  const activeVariant = processVariants[activeImage] ?? processVariants[0] ?? null;
+  const showEditor = activeVariant != null && activeVariant.infographicItems.length > 0;
+
+  const updateVariant = (id: string, patch: Partial<ProcessVariant>) => {
+    setProcessVariants((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
+  };
 
   return (
     <div className={styles.page}>
@@ -126,48 +160,76 @@ export default function HistoryDetailPage() {
             />
           </div>
         </Card>
-        {record.status === 'completed' && resultImages.length > 0 ? (
+        {record.status === 'completed' && processVariants.length > 0 && !showEditor ? (
           <Card className={styles.section}>
             <h2 className={styles.sectionTitle}>{t('dashboard.resultTitle')}</h2>
-            {activeResultImage && (
+            {activeVariant && (
               <div className={styles.mediaFrame}>
-                <img src={activeResultImage} alt={t('dashboard.resultAlt', { n: activeImage + 1 })} className={styles.mediaImage} />
+                <img
+                  src={
+                    activeVariant.displayBase === 'saved' && activeVariant.savedUrl
+                      ? activeVariant.savedUrl
+                      : activeVariant.originalUrl
+                  }
+                  alt={t('dashboard.resultAlt', { n: activeImage + 1 })}
+                  className={styles.mediaImage}
+                />
               </div>
             )}
-            {resultImages.length > 1 && (
+            {processVariants.length > 1 && (
               <div className={styles.thumbRow}>
-                {resultImages.map((url, idx) => (
+                {processVariants.map((v, idx) => (
                   <button
-                    key={`${url.slice(0, 32)}-${idx}`}
+                    key={v.id}
                     type="button"
                     className={`${styles.thumbBtn} ${activeImage === idx ? styles.thumbBtnActive : ''}`}
                     onClick={() => setActiveImage(idx)}
                   >
-                    <img src={url} alt="" className={styles.thumbImg} />
+                    <img
+                      src={v.displayBase === 'saved' && v.savedUrl ? v.savedUrl : v.originalUrl}
+                      alt=""
+                      className={styles.thumbImg}
+                    />
                   </button>
                 ))}
               </div>
             )}
           </Card>
-        ) : (
+        ) : record.status !== 'completed' || processVariants.length === 0 ? (
           <Card className={styles.section}>
             <h2 className={styles.sectionTitle}>{t('history.createdAt')}</h2>
             <p className={styles.metaInfo}>{formatLocaleDateTime(record.createdAt, localeTag)}</p>
           </Card>
-        )}
+        ) : null}
       </div>
 
-      {record.status === 'completed' && infographicItems.length > 0 && (
+      {record.status === 'completed' && showEditor && activeVariant && (
         <Card className={styles.section}>
-          <h2 className={styles.sectionTitle}>{t('history.infographicItems')}</h2>
-          <div className={styles.infoList}>
-            {infographicItems.map((item, idx) => (
-              <div key={`${item.position}-${item.text}-${idx}`} className={styles.infoItem}>
-                <span className={styles.infoText}>{item.text}</span>
-                <span className={styles.infoPos}>{item.position}</span>
-              </div>
-            ))}
-          </div>
+          <VariantEditor
+            key={activeVariant.id}
+            variant={activeVariant}
+            variantIndex={activeImage}
+            variantCount={processVariants.length}
+            onVariantChange={updateVariant}
+          />
+          {processVariants.length > 1 && (
+            <div className={styles.thumbRow}>
+              {processVariants.map((v, idx) => (
+                <button
+                  key={v.id}
+                  type="button"
+                  className={`${styles.thumbBtn} ${activeImage === idx ? styles.thumbBtnActive : ''}`}
+                  onClick={() => setActiveImage(idx)}
+                >
+                  <img
+                    src={v.displayBase === 'saved' && v.savedUrl ? v.savedUrl : v.originalUrl}
+                    alt=""
+                    className={styles.thumbImg}
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </Card>
       )}
 
