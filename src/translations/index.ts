@@ -294,6 +294,7 @@ const ru: Record<string, unknown> = {
     cardTextsResultTitle: 'Тексты для карточки',
     copyToClipboard: 'Нажмите, чтобы скопировать',
     textsOnlyResultHint: 'Тексты готовы. Загрузите новое изображение, чтобы обработать фото.',
+    resultsSoonHint: 'Скоро тут появится результат!',
   },
   landing: {
     heroEyebrow: 'AI для маркетплейсов',
@@ -713,6 +714,7 @@ const en: Record<string, unknown> = {
     cardTextsResultTitle: 'Card copy',
     copyToClipboard: 'Click to copy',
     textsOnlyResultHint: 'Copy is ready. Upload a new image to process a photo.',
+    resultsSoonHint: 'Results will appear here soon!',
   },
   landing: {
     heroEyebrow: 'AI for marketplaces',

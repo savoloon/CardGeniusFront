@@ -270,7 +270,7 @@ export interface CreatePlanBody {
   visible?: boolean;
 }
 
-export interface UpdatePlanBody extends Partial<CreatePlanBody> {}
+export type UpdatePlanBody = Partial<CreatePlanBody>;
 
 export async function getAdminUsers(): Promise<AdminUsersResponse> {
   return request<AdminUsersResponse>('/admin/users');
@@ -319,7 +319,7 @@ export interface ProcessStatusResponse {
   success: boolean;
   data?: {
     taskId: string;
-    status: 'pending' | 'completed' | 'failed';
+    status: 'pending' | 'processing' | 'completed' | 'failed';
     result?: { images: string[] };
     infographicItems?: InfographicItemApi[];
   };

@@ -38,6 +38,8 @@ export default function DashboardPage() {
 
   const variantDirtyRef = useRef(false);
   const [sessionRestoredNotice, setSessionRestoredNotice] = useState(false);
+  /** True after a process job was accepted; keeps us off setup until reset even if overlay state glitches. */
+  const [jobAwaiting, setJobAwaiting] = useState(false);
 
   useEffect(() => {
     void restoreWorkspaceFromMeta().then((ok) => {
@@ -94,6 +96,7 @@ export default function DashboardPage() {
       stopPolling();
       resetResults();
       clearAllDrafts();
+      setJobAwaiting(false);
       setDescTitles([]);
       setDescDescriptions([]);
     },
@@ -106,6 +109,7 @@ export default function DashboardPage() {
     stopPolling();
     resetResults();
     clearAllDrafts();
+    setJobAwaiting(false);
     setDescTitles([]);
     setDescDescriptions([]);
   }, [clearPreview, stopPolling, resetResults]);
@@ -191,6 +195,7 @@ export default function DashboardPage() {
 
       if (imageRes.success && taskIds.length > 0) {
         startPolling(taskIds);
+        setJobAwaiting(true);
         imageOk = true;
       } else if (!imageRes.success) {
         setError(imageRes.message ?? t('dashboard.submitError'));
@@ -210,6 +215,7 @@ export default function DashboardPage() {
     stopPolling();
     resetResults();
     clearAllDrafts();
+    setJobAwaiting(false);
     setSessionRestoredNotice(false);
     setDescTitles([]);
     setDescDescriptions([]);
@@ -227,17 +233,23 @@ export default function DashboardPage() {
     [setActiveResultIndex, t]
   );
 
-  const isProcessing = submitting || textsLoading || queueStatus === 'pending';
+  const isProcessing =
+    submitting ||
+    textsLoading ||
+    queueStatus === 'pending' ||
+    queueStatus === 'processing';
 
   const hasImageResults = queueStatus === 'completed' && resultImages.length > 0;
   const hasTextResults = descTitles.length > 0 || descDescriptions.length > 0;
   const hasAnyResults = hasImageResults || hasTextResults;
+  const showResultsSoon =
+    jobAwaiting && !hasImageResults && queueStatus !== 'failed';
 
   const phase: WorkflowPhase = useMemo(() => {
     if (isProcessing) return 'processing';
-    if (hasAnyResults || queueStatus === 'failed') return 'results';
+    if (hasAnyResults || queueStatus === 'failed' || showResultsSoon) return 'results';
     return 'setup';
-  }, [isProcessing, hasAnyResults, queueStatus]);
+  }, [isProcessing, hasAnyResults, queueStatus, showResultsSoon]);
 
   const processDisabled =
     !image ||
@@ -476,7 +488,13 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {!hasImageResults && hasTextResults && (
+          {showResultsSoon && !hasImageResults && (
+            <div className={styles.textsOnlyNotice} role="status">
+              <p>{t('dashboard.resultsSoonHint')}</p>
+            </div>
+          )}
+
+          {!hasImageResults && !showResultsSoon && hasTextResults && (
             <div className={styles.textsOnlyNotice}>
               <p>{t('dashboard.textsOnlyResultHint')}</p>
             </div>

@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
 
 const proxyTarget = process.env.VITE_PROXY_TARGET || 'http://localhost:5000';
@@ -8,6 +8,11 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    // Docker Desktop on Windows often misses native FS events on bind mounts
+    watch: {
+      usePolling: true,
+      interval: 300,
+    },
     proxy: {
       '/api': {
         target: proxyTarget,
@@ -15,5 +20,10 @@ export default defineConfig({
         secure: false,
       },
     },
+  },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    reporters: ['default'],
   },
 });

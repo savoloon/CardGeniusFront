@@ -19,7 +19,16 @@ import {
 
 const POLL_INTERVAL_MS = 2000;
 
-export type QueueStatus = 'pending' | 'completed' | 'failed' | null;
+export type QueueStatus = 'pending' | 'processing' | 'completed' | 'failed' | null;
+
+/** ML may return `processing` while the worker runs; treat unknown in-flight values as pending. */
+function normalizeQueueStatus(raw: string | undefined): QueueStatus {
+  if (raw === 'completed' || raw === 'failed' || raw === 'pending' || raw === 'processing') {
+    return raw;
+  }
+  if (!raw) return 'pending';
+  return 'pending';
+}
 
 function buildVariantsFromTask(
   taskId: string,
@@ -134,23 +143,29 @@ export function useProcessPolling() {
       try {
         const res = await getProcessStatus(id);
         if (!res.success || !res.data) return;
-        setQueueStatus(res.data.status);
-        if (res.data.status === 'completed' && res.data.result?.images) {
+        const status = normalizeQueueStatus(res.data.status);
+        if (status === 'completed' && res.data.result?.images) {
           const images = res.data.result.images;
           const items = res.data.infographicItems ?? [];
           const itemCopy = items.length > 0 ? [...items] : [];
           const list = buildVariantsFromTask(id, images, itemCopy);
           const sessionId = crypto.randomUUID();
           setResultSessionId(sessionId);
+          // Apply variants before flipping to completed so the UI never lands on setup mid-hydrate.
           await applyVariants(list, sessionId);
           setActiveResultIndex(0);
+          setQueueStatus('completed');
           stopPolling();
+          return;
         }
-        if (res.data.status === 'failed') {
+        if (status === 'failed') {
           setVariants([]);
           setActiveResultIndex(0);
+          setQueueStatus('failed');
           stopPolling();
+          return;
         }
+        setQueueStatus(status);
       } catch {
         /* keep polling */
       }
@@ -198,8 +213,10 @@ export function useProcessPolling() {
       taskIdsRef.current = taskIds;
       setQueueStatus('pending');
       if (taskIds.length === 1) {
+        void pollTask(taskIds[0]);
         pollRef.current = setInterval(() => pollTask(taskIds[0]), POLL_INTERVAL_MS);
       } else {
+        void pollAllTasks(taskIds);
         pollRef.current = setInterval(() => pollAllTasks(taskIds), POLL_INTERVAL_MS);
       }
     },
