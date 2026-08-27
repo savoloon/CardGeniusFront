@@ -116,6 +116,9 @@ export default function VariantEditor({
   const [textSnapshot, setTextSnapshot] = useState<FabricTextSnapshot | null>(null);
   const [imageAspect, setImageAspect] = useState(1);
   const [bgReady, setBgReady] = useState(false);
+  const [regionSelected, setRegionSelected] = useState(false);
+  const [canPaste, setCanPaste] = useState(false);
+  const skipDraftPersistRef = useRef(false);
 
   const {
 
@@ -126,10 +129,6 @@ export default function VariantEditor({
     brush,
 
     setBrush,
-
-    blurRadius,
-
-    setBlurRadius,
 
     applyToolToCanvas,
 
@@ -195,19 +194,27 @@ export default function VariantEditor({
   }, [imageAspect]);
 
   useEffect(() => {
+    skipDraftPersistRef.current = false;
     setDirty(false);
     onDirtyChange?.(false);
     setTextSelected(false);
     setTextSnapshot(null);
     setBgReady(false);
+    setRegionSelected(false);
   }, [variant.id, onDirtyChange]);
 
   useEffect(() => {
     if (!bgReady || !stageRef.current) return;
 
     const draft = getVariantDraft(variant.id);
-    if (draft?.usedRecommendedKeys?.length) {
+    const savedFlattened = variant.displayBase === 'saved' && !draft?.dirty;
+
+    if (draft?.usedRecommendedKeys?.length && !savedFlattened) {
       onVariantChange(variant.id, { usedRecommendedKeys: draft.usedRecommendedKeys });
+    }
+
+    if (savedFlattened) {
+      return;
     }
 
     if (draft?.textLayers.length) {
@@ -220,13 +227,14 @@ export default function VariantEditor({
       setDirty(true);
       onDirtyChange?.(true);
     }
-  }, [variant.id, bgReady, variant.textLayers, onVariantChange, onDirtyChange]);
+  }, [variant.id, bgReady, variant.displayBase, variant.textLayers, onVariantChange, onDirtyChange]);
 
 
 
   useEffect(() => {
 
     stageRef.current?.setDirtyListener((d) => {
+      if (d) skipDraftPersistRef.current = false;
 
       setDirty(d);
 
@@ -247,6 +255,7 @@ export default function VariantEditor({
 
 
   const persistDraft = useCallback(() => {
+    if (skipDraftPersistRef.current) return;
 
     const json = stageRef.current?.serialize() ?? null;
 
@@ -300,6 +309,8 @@ export default function VariantEditor({
 
       const savedUrl = getProcessSavedImageUrl(variant.taskId, variant.resultIndex);
 
+      skipDraftPersistRef.current = true;
+      removeVariantDraft(variant.id);
       stageRef.current?.clearDrawing();
 
       await stageRef.current?.loadBackground(savedUrl);
@@ -317,8 +328,6 @@ export default function VariantEditor({
         dirty: false,
 
       });
-
-      removeVariantDraft(variant.id);
 
       setDirty(false);
 
@@ -348,6 +357,8 @@ export default function VariantEditor({
 
       await deleteVariantSave(variant.taskId, variant.resultIndex);
 
+      skipDraftPersistRef.current = true;
+      removeVariantDraft(variant.id);
       stageRef.current?.clearDrawing();
 
       await stageRef.current?.loadBackground(variant.originalUrl);
@@ -362,11 +373,11 @@ export default function VariantEditor({
 
         usedRecommendedKeys: [],
 
+        textLayers: [],
+
         dirty: false,
 
       });
-
-      removeVariantDraft(variant.id);
 
       setDirty(false);
 
@@ -622,9 +633,29 @@ export default function VariantEditor({
 
           onBrushWidthChange={(w) => setBrush((b) => ({ ...b, width: w }))}
 
-          blurRadius={blurRadius}
+          brushKind={brush.kind}
 
-          onBlurRadiusChange={setBlurRadius}
+          onBrushKindChange={(kind) => setBrush((b) => ({ ...b, kind }))}
+
+          opacity={brush.opacity}
+
+          onOpacityChange={(opacity) => setBrush((b) => ({ ...b, opacity }))}
+
+          regionSelected={regionSelected}
+
+          canPaste={canPaste}
+
+          onCopy={() => {
+            if (stageRef.current?.copySelection()) setCanPaste(true);
+          }}
+
+          onCut={() => {
+            if (stageRef.current?.cutSelection()) setCanPaste(true);
+          }}
+
+          onPaste={() => {
+            stageRef.current?.pasteClipboard();
+          }}
 
           onUndo={handleUndo}
 
@@ -654,10 +685,10 @@ export default function VariantEditor({
 
               brushColor={brush.color}
 
-              blurRadius={blurRadius}
-
               onEyedropperColor={(c) => setBrush((b) => ({ ...b, color: c }))}
               onTextSelectionChange={handleTextSelectionChange}
+              onRegionSelectionChange={setRegionSelected}
+              onClipboardChange={setCanPaste}
               onBackgroundReady={() => setBgReady(true)}
             />
 

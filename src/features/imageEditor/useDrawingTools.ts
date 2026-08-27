@@ -1,65 +1,73 @@
 import { useCallback, useState } from 'react';
-import type { Canvas, PencilBrush } from 'fabric';
-import { BRUSH_PRESETS, type BrushSettings, type EditorTool } from './types';
+import { PencilBrush } from 'fabric';
+import type { Canvas } from 'fabric';
+import { Airbrush, StampBrush } from './paintBrushes';
+import { hexToRgba } from './colorUtils';
+import type { BrushSettings, EditorTool } from './types';
 
 const DEFAULT_BRUSH: BrushSettings = {
   color: '#e11d48',
-  width: 4,
+  width: 8,
   opacity: 1,
+  kind: 'round',
 };
+
+const DRAWING_TOOLS: EditorTool[] = ['pencil', 'brush', 'eraser'];
 
 export function useDrawingTools() {
   const [tool, setTool] = useState<EditorTool>('select');
   const [brush, setBrush] = useState<BrushSettings>(DEFAULT_BRUSH);
-  const [blurRadius, setBlurRadius] = useState(8);
 
   const applyToolToCanvas = useCallback(
     (canvas: Canvas | null) => {
       if (!canvas) return;
 
       canvas.isDrawingMode = false;
-      canvas.selection = tool === 'select' || tool === 'text';
-      canvas.defaultCursor = tool === 'eyedropper' ? 'crosshair' : 'default';
+      canvas.selection = tool === 'text';
+      canvas.skipTargetFind = tool === 'fill' || tool === 'eyedropper';
+      canvas.defaultCursor =
+        tool === 'eyedropper' || tool === 'fill' || tool === 'select' ? 'crosshair' : 'default';
 
-      const drawingTools: EditorTool[] = [
-        'pencil',
-        'brushSoft',
-        'brushMedium',
-        'brushHard',
-        'eraser',
-        'blur',
-      ];
-
-      if (!drawingTools.includes(tool)) return;
+      if (!DRAWING_TOOLS.includes(tool)) return;
 
       canvas.isDrawingMode = true;
-      const pencil = canvas.freeDrawingBrush as PencilBrush;
-      if (!pencil) return;
+      canvas.defaultCursor = 'crosshair';
 
-      let width = brush.width;
-      let opacity = brush.opacity;
-      if (tool === 'brushSoft' || tool === 'brushMedium' || tool === 'brushHard') {
-        const preset = BRUSH_PRESETS[tool];
-        width = preset.width;
-        opacity = preset.opacity;
+      if (tool === 'pencil' || tool === 'eraser' || (tool === 'brush' && brush.kind === 'round')) {
+        const pencil = new PencilBrush(canvas);
+        pencil.width = Math.max(1, brush.width);
+        pencil.decimate = tool === 'pencil' ? 0.5 : 0.35;
+        pencil.strokeLineCap = tool === 'pencil' ? 'round' : 'round';
+        pencil.strokeLineJoin = 'round';
+        pencil.limitedToCanvasSize = true;
+        if (tool === 'eraser') {
+          pencil.color = 'rgba(0,0,0,1)';
+          // @ts-expect-error fabric brush composite
+          pencil.globalCompositeOperation = 'destination-out';
+        } else {
+          pencil.color = hexToRgba(brush.color, tool === 'pencil' ? 1 : brush.opacity);
+          // @ts-expect-error fabric brush composite
+          pencil.globalCompositeOperation = 'source-over';
+        }
+        canvas.freeDrawingBrush = pencil;
+        return;
       }
-      if (tool === 'pencil') {
-        width = Math.max(1, brush.width);
-        opacity = brush.opacity;
+
+      if (tool === 'brush' && brush.kind === 'spray') {
+        const spray = new Airbrush(canvas);
+        spray.width = Math.max(4, brush.width);
+        spray.color = hexToRgba(brush.color, brush.opacity);
+        spray.limitedToCanvasSize = true;
+        canvas.freeDrawingBrush = spray;
+        return;
       }
 
-      pencil.width = width;
-      pencil.color =
-        tool === 'eraser'
-          ? 'rgba(255,255,255,1)'
-          : hexToRgba(brush.color, opacity);
-
-      if (tool === 'eraser') {
-        // @ts-expect-error fabric brush composite
-        pencil.globalCompositeOperation = 'destination-out';
-      } else {
-        // @ts-expect-error fabric brush composite
-        pencil.globalCompositeOperation = 'source-over';
+      if (tool === 'brush') {
+        const stamp = new StampBrush(canvas, brush.kind === 'marker' ? 'marker' : 'calligraphy');
+        stamp.width = Math.max(2, brush.width);
+        stamp.color = hexToRgba(brush.color, brush.opacity);
+        stamp.limitedToCanvasSize = true;
+        canvas.freeDrawingBrush = stamp;
       }
     },
     [tool, brush]
@@ -70,18 +78,6 @@ export function useDrawingTools() {
     setTool,
     brush,
     setBrush,
-    blurRadius,
-    setBlurRadius,
     applyToolToCanvas,
   };
-}
-
-function hexToRgba(hex: string, alpha: number): string {
-  const h = hex.replace('#', '');
-  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
-  const n = parseInt(full, 16);
-  const r = (n >> 16) & 255;
-  const g = (n >> 8) & 255;
-  const b = n & 255;
-  return `rgba(${r},${g},${b},${alpha})`;
 }

@@ -12,6 +12,13 @@
   align-items: start;
 }
 
+.toolColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 10.5rem;
+}
+
 .toolRail {
   display: flex;
   flex-direction: column;
@@ -26,10 +33,18 @@
   border-color: rgba(0, 0, 0, 0.08);
 }
 
+[data-theme='light'] .toolOptions,
+[data-theme='light'] .brushMenu {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
 .toolBtn {
   width: 2.5rem;
   height: 2.5rem;
   padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1rem;
   font-family: inherit;
   color: var(--color-text);
@@ -37,6 +52,150 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: var(--radius-sm);
   cursor: pointer;
+}
+
+.toolBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.toolIcon {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
+}
+
+.toolTextIcon {
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.toolBtnWrap {
+  position: relative;
+  width: 2.5rem;
+}
+
+.brushMenu {
+  position: absolute;
+  left: calc(100% + 0.4rem);
+  top: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 11.5rem;
+  padding: 0.35rem;
+  background: var(--color-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
+}
+
+.brushMenuItem {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.brushMenuItem:hover {
+  background: var(--color-accent-muted);
+}
+
+.brushMenuItemActive {
+  border-color: var(--color-accent);
+  background: var(--color-accent-muted);
+  color: var(--color-accent);
+}
+
+.toolOptions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  padding: 0.65rem 0.6rem;
+  background: var(--color-bg-input);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.sizeBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.tipPreview {
+  width: 4rem;
+  height: 4rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: #fff;
+}
+
+.sizeSlider {
+  width: 100%;
+  accent-color: var(--color-accent);
+  cursor: pointer;
+}
+
+.colorSwatch {
+  width: 100%;
+  height: 2rem;
+  padding: 0.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg-card);
+  cursor: pointer;
+}
+
+.opacityValue {
+  font-size: 0.75rem;
+  color: var(--color-text);
+}
+
+.selectActions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.selectHint {
+  margin: 0 0 0.2rem;
+  font-size: 0.7rem;
+  line-height: 1.35;
+  color: var(--color-text-muted);
+}
+
+.actionMini {
+  width: 100%;
+  padding: 0.35rem 0.45rem;
+  font-size: 0.75rem;
+  font-family: inherit;
+  color: var(--color-text);
+  background: var(--color-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.actionMini:hover:not(:disabled) {
+  border-color: var(--color-accent);
+}
+
+.actionMini:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 .toolBtn:hover {
@@ -49,8 +208,9 @@
   color: var(--color-accent);
 }
 
-.toolDivider {
+.toolRailDivider {
   height: 1px;
+  width: 100%;
   margin: 0.25rem 0;
   background: rgba(255, 255, 255, 0.1);
 }
@@ -352,9 +512,30 @@
     grid-template-columns: 1fr;
   }
 
+  .toolColumn {
+    width: 100%;
+    min-width: 0;
+  }
+
   .toolRail {
     flex-direction: row;
     flex-wrap: wrap;
+  }
+
+  .toolOptions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .sizeBlock,
+  .selectActions {
+    min-width: 9rem;
+  }
+
+  .brushMenu {
+    left: 0;
+    top: calc(100% + 0.35rem);
   }
 
   .actionBtns {

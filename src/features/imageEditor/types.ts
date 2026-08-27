@@ -1,25 +1,27 @@
 export type EditorTool =
   | 'select'
   | 'pencil'
-  | 'brushSoft'
-  | 'brushMedium'
-  | 'brushHard'
+  | 'brush'
   | 'eraser'
-  | 'blur'
+  | 'fill'
   | 'eyedropper'
   | 'text';
+
+export type BrushKind = 'round' | 'calligraphy' | 'spray' | 'marker';
 
 export interface BrushSettings {
   color: string;
   width: number;
   opacity: number;
+  kind: BrushKind;
 }
 
-export const BRUSH_PRESETS: Record<
-  'brushSoft' | 'brushMedium' | 'brushHard',
-  { width: number; opacity: number }
-> = {
-  brushSoft: { width: 12, opacity: 0.35 },
-  brushMedium: { width: 20, opacity: 0.55 },
-  brushHard: { width: 28, opacity: 0.85 },
-};
+export const MIN_BRUSH_WIDTH = 1;
+export const MAX_BRUSH_WIDTH = 64;
+
+export const BRUSH_KINDS: { id: BrushKind; labelKey: string }[] = [
+  { id: 'round', labelKey: 'dashboard.toolBrushRound' },
+  { id: 'calligraphy', labelKey: 'dashboard.toolBrushCalligraphy' },
+  { id: 'spray', labelKey: 'dashboard.toolBrushSpray' },
+  { id: 'marker', labelKey: 'dashboard.toolBrushMarker' },
+];
