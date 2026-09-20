@@ -47,19 +47,19 @@ import { useDrawingTools } from './useDrawingTools';
 import { getVariantDraft, setVariantDraft, removeVariantDraft } from './variantDraftStorage';
 
 import { downloadBlob } from '../../utils/downloadBlob';
+import { downloadAllVariantsZip } from '../../utils/exportAllVariants';
 import { loadImageElement } from '../../lib/loadImageElement';
+import { formatToExtension, type ExportImageFormat } from './composeExport';
+import { STAGE_MAX_W } from './constants';
+import ExportFormatMenu from '../../components/dashboard/ExportFormatMenu';
 
 import styles from './ImageEditor.module.css';
-
-
-
-const STAGE_MAX_W = 720;
-
-
 
 interface VariantEditorProps {
 
   variant: ProcessVariant;
+
+  variants?: ProcessVariant[];
 
   variantIndex: number;
 
@@ -78,6 +78,8 @@ interface VariantEditorProps {
 export default function VariantEditor({
 
   variant,
+
+  variants,
 
   variantIndex,
 
@@ -106,6 +108,8 @@ export default function VariantEditor({
   const [error, setError] = useState<string | null>(null);
 
   const [jpegQuality, setJpegQuality] = useState(0.92);
+  const [exportMenu, setExportMenu] = useState<'one' | 'all' | null>(null);
+  const exportMenuRef = useRef<HTMLDivElement>(null);
 
   const [canUndo, setCanUndo] = useState(false);
 
@@ -119,6 +123,8 @@ export default function VariantEditor({
   const [regionSelected, setRegionSelected] = useState(false);
   const [canPaste, setCanPaste] = useState(false);
   const skipDraftPersistRef = useRef(false);
+  const allVariants = variants?.length ? variants : [variant];
+  const canExportAll = allVariants.length > 1;
 
   const {
 
@@ -287,6 +293,24 @@ export default function VariantEditor({
 
   }, [variant.id, persistDraft]);
 
+  useEffect(() => {
+    if (!exportMenu) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!exportMenuRef.current?.contains(event.target as Node)) {
+        setExportMenu(null);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setExportMenu(null);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [exportMenu]);
+
 
 
   const handleSave = async () => {
@@ -393,32 +417,44 @@ export default function VariantEditor({
 
 
 
-  const handleExport = async (format: 'png' | 'jpeg') => {
-
+  const handleExport = async (format: ExportImageFormat) => {
+    setExportMenu(null);
     setExporting(true);
-
     setError(null);
-
     try {
-
       const blob = await stageRef.current?.exportBlob(format, jpegQuality);
-
       if (!blob) throw new Error('Export failed');
-
-      const ext = format === 'jpeg' ? 'jpg' : 'png';
-
-      downloadBlob(blob, `variant-${variantIndex + 1}.${ext}`);
-
+      downloadBlob(blob, `variant-${variantIndex + 1}.${formatToExtension(format)}`);
     } catch {
-
       setError(t('dashboard.downloadResultError'));
-
     } finally {
-
       setExporting(false);
-
     }
+  };
 
+  const handleExportAll = async (format: ExportImageFormat) => {
+    persistDraft();
+    setExportMenu(null);
+    setExporting(true);
+    setError(null);
+    try {
+      await downloadAllVariantsZip({
+        variants: allVariants,
+        activeIndex: variantIndex,
+        exportActive: async () => {
+          const blob = await stageRef.current?.exportBlob(format, jpegQuality);
+          if (!blob) throw new Error('Export failed');
+          return blob;
+        },
+        format,
+        quality: jpegQuality,
+        stageWidth: stageSize.width,
+      });
+    } catch {
+      setError(t('dashboard.downloadAllError'));
+    } finally {
+      setExporting(false);
+    }
   };
 
 
@@ -577,19 +613,63 @@ export default function VariantEditor({
 
         </div>
 
-        <div className={styles.actionBtns}>
+        <div className={styles.actionBtns} ref={exportMenuRef}>
 
-          <Button type="button" variant="outline" loading={exporting} onClick={() => handleExport('png')}>
+          <div className={styles.exportWrap}>
 
-            {t('dashboard.exportPng')}
+            <Button
+              type="button"
+              variant="outline"
+              loading={exporting}
+              disabled={exporting}
+              onClick={() => setExportMenu((open) => (open === 'one' ? null : 'one'))}
+            >
 
-          </Button>
+              {t('dashboard.downloadImage')}
 
-          <Button type="button" variant="outline" loading={exporting} onClick={() => handleExport('jpeg')}>
+            </Button>
 
-            {t('dashboard.exportJpeg')}
+            {exportMenu === 'one' && (
 
-          </Button>
+              <ExportFormatMenu
+                quality={jpegQuality}
+                onQualityChange={setJpegQuality}
+                onSelect={(format) => void handleExport(format)}
+              />
+
+            )}
+
+          </div>
+
+          {canExportAll && (
+
+            <div className={styles.exportWrap}>
+
+              <Button
+                type="button"
+                variant="outline"
+                loading={exporting}
+                disabled={exporting}
+                onClick={() => setExportMenu((open) => (open === 'all' ? null : 'all'))}
+              >
+
+                {t('dashboard.saveAllSlides')}
+
+              </Button>
+
+              {exportMenu === 'all' && (
+
+                <ExportFormatMenu
+                  quality={jpegQuality}
+                  onQualityChange={setJpegQuality}
+                  onSelect={(format) => void handleExportAll(format)}
+                />
+
+              )}
+
+            </div>
+
+          )}
 
           <Button type="button" variant="outline" onClick={handleRevert}>
 
@@ -715,26 +795,6 @@ export default function VariantEditor({
             <p className={styles.actionVariant}>{t('dashboard.infographicDoubleClickHint')}</p>
 
           )}
-
-          <label className={styles.propLabel}>
-
-            {t('dashboard.jpegQuality')}
-
-            <input
-
-              type="range"
-
-              min={60}
-
-              max={100}
-
-              value={Math.round(jpegQuality * 100)}
-
-              onChange={(e) => setJpegQuality(Number(e.target.value) / 100)}
-
-            />
-
-          </label>
 
         </div>
 

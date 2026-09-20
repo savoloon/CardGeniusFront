@@ -459,6 +459,7 @@ export default function DashboardPage() {
               <VariantEditor
                 key={activeVariant.id}
                 variant={activeVariant}
+                variants={processVariants}
                 variantIndex={activeResultIndex}
                 variantCount={processVariants.length}
                 onVariantChange={updateVariant}

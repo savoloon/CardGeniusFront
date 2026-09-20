@@ -1,6 +1,10 @@
 import { Button } from '../../components/ui';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { INFOGRAPHIC_FONT_OPTIONS } from '../../constants/infographicFonts';
+import {
+  INFOGRAPHIC_FONT_OPTIONS,
+  infographicFontPrimaryName,
+  normalizeInfographicFont,
+} from '../../constants/infographicFonts';
 import type { FabricTextSnapshot } from './fabricTextTypes';
 import styles from './ImageEditor.module.css';
 
@@ -31,12 +35,12 @@ export default function TextObjectToolbar({
         {t('dashboard.infographicFont')}
         <select
           className={styles.toolSelect}
-          value={snapshot.fontFamily}
+          value={normalizeInfographicFont(snapshot.fontFamily)}
           onChange={(e) => onChange({ fontFamily: e.target.value })}
         >
           {INFOGRAPHIC_FONT_OPTIONS.map((f) => (
             <option key={f} value={f}>
-              {f.split(',')[0].replace(/"/g, '')}
+              {infographicFontPrimaryName(f)}
             </option>
           ))}
         </select>

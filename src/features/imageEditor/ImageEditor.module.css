@@ -302,6 +302,11 @@
   align-items: center;
 }
 
+.exportWrap {
+  position: relative;
+  display: inline-flex;
+}
+
 .stageOuter {
   display: flex;
   justify-content: center;

@@ -1,4 +1,4 @@
-import { INFOGRAPHIC_FONT_OPTIONS } from '../constants/infographicFonts';
+import { DEFAULT_INFOGRAPHIC_FONT } from '../constants/infographicFonts';
 import type { TextLayer } from '../types/infographicEditor';
 
 export function createTextLayer(
@@ -6,7 +6,7 @@ export function createTextLayer(
 ): TextLayer {
   return {
     id: crypto.randomUUID(),
-    fontFamily: INFOGRAPHIC_FONT_OPTIONS[0],
+    fontFamily: DEFAULT_INFOGRAPHIC_FONT,
     fontSize: 18,
     color: '#1a1a1a',
     fontWeight: 600,

@@ -1,5 +1,6 @@
 import type { TextLayer } from '../types/infographicEditor';
 import { downloadBlob } from './downloadBlob';
+import { normalizeInfographicFont } from '../constants/infographicFonts';
 
 const MAX_LAYER_WIDTH_CSS = 352; // ~22rem
 const LAYER_PADDING_CSS = 8;
@@ -18,7 +19,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 function buildFont(layer: TextLayer, scaledSize: number): string {
   const style = layer.fontStyle === 'italic' ? 'italic ' : '';
   const weight = `${layer.fontWeight} `;
-  return `${style}${weight}${scaledSize}px ${layer.fontFamily}`;
+  return `${style}${weight}${scaledSize}px ${normalizeInfographicFont(layer.fontFamily)}`;
 }
 
 function wrapLines(

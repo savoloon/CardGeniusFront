@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Card, Button } from '../../components/ui';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -13,8 +13,12 @@ import {
   getProcessSavedImageUrl,
 } from '../../services/api';
 import VariantEditor from '../../features/imageEditor/VariantEditor';
-import { buildProcessVariant, type ProcessVariant } from '../../types/processVariant';
+import { buildProcessVariant, getVariantBaseUrl, type ProcessVariant } from '../../types/processVariant';
 import type { TextLayer } from '../../types/infographicEditor';
+import { zipImageUrls } from '../../utils/exportAllVariants';
+import { downloadBlob } from '../../utils/downloadBlob';
+import ExportFormatMenu from '../../components/dashboard/ExportFormatMenu';
+import type { ExportImageFormat } from '../../features/imageEditor/composeExport';
 import styles from './HistoryDetailPage.module.css';
 
 export default function HistoryDetailPage() {
@@ -33,6 +37,10 @@ export default function HistoryDetailPage() {
   const [resultError, setResultError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState<string | null>(null);
+  const [downloadingAll, setDownloadingAll] = useState(false);
+  const [galleryMenuOpen, setGalleryMenuOpen] = useState(false);
+  const [galleryQuality, setGalleryQuality] = useState(0.92);
+  const galleryMenuRef = useRef<HTMLDivElement>(null);
 
   const localeTag = locale === 'en' ? 'en-US' : 'ru-RU';
 
@@ -106,6 +114,24 @@ export default function HistoryDetailPage() {
     };
   }, [id, t, getErrorMessage]);
 
+  useEffect(() => {
+    if (!galleryMenuOpen) return;
+    const onPointerDown = (event: MouseEvent) => {
+      if (!galleryMenuRef.current?.contains(event.target as Node)) {
+        setGalleryMenuOpen(false);
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setGalleryMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [galleryMenuOpen]);
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -134,6 +160,21 @@ export default function HistoryDetailPage() {
 
   const updateVariant = (id: string, patch: Partial<ProcessVariant>) => {
     setProcessVariants((prev) => prev.map((v) => (v.id === id ? { ...v, ...patch } : v)));
+  };
+
+  const handleDownloadAllGallery = async (format: ExportImageFormat) => {
+    setGalleryMenuOpen(false);
+    setDownloadingAll(true);
+    setResultError(null);
+    try {
+      const urls = processVariants.map((v) => getVariantBaseUrl(v));
+      const blob = await zipImageUrls(urls, { format, quality: galleryQuality });
+      downloadBlob(blob, 'card-genius-variants.zip');
+    } catch {
+      setResultError(t('dashboard.downloadAllError'));
+    } finally {
+      setDownloadingAll(false);
+    }
   };
 
   return (
@@ -176,6 +217,30 @@ export default function HistoryDetailPage() {
                 />
               </div>
             )}
+            {resultError && (
+              <p className={styles.errorText} role="alert">
+                {resultError}
+              </p>
+            )}
+            {processVariants.length > 1 && (
+              <div className={styles.galleryActions} ref={galleryMenuRef}>
+                <Button
+                  variant="outline"
+                  loading={downloadingAll}
+                  disabled={downloadingAll}
+                  onClick={() => setGalleryMenuOpen((open) => !open)}
+                >
+                  {t('dashboard.saveAllSlides')}
+                </Button>
+                {galleryMenuOpen && (
+                  <ExportFormatMenu
+                    quality={galleryQuality}
+                    onQualityChange={setGalleryQuality}
+                    onSelect={(format) => void handleDownloadAllGallery(format)}
+                  />
+                )}
+              </div>
+            )}
             {processVariants.length > 1 && (
               <div className={styles.thumbRow}>
                 {processVariants.map((v, idx) => (
@@ -208,6 +273,7 @@ export default function HistoryDetailPage() {
           <VariantEditor
             key={activeVariant.id}
             variant={activeVariant}
+            variants={processVariants}
             variantIndex={activeImage}
             variantCount={processVariants.length}
             onVariantChange={updateVariant}

@@ -217,6 +217,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </header>
 
       <main className={styles.main}>{children}</main>
+      <footer className={styles.footer}>
+        <a
+          className={styles.licenseLink}
+          href="/licenses/OFL.txt"
+          target="_blank"
+          rel="noreferrer"
+        >
+          {t('common.fontLicenses')}
+        </a>
+      </footer>
     </div>
   );
 }

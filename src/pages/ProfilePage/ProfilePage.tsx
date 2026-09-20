@@ -229,6 +229,11 @@ export default function ProfilePage() {
           )}
         </Card>
       </div>
+      <p className={styles.licenseNote}>
+        <a href="/licenses/OFL.txt" target="_blank" rel="noreferrer">
+          {t('common.fontLicenses')}
+        </a>
+      </p>
     </div>
   );
 }

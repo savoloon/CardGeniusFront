@@ -123,6 +123,12 @@
   gap: 0.45rem;
 }
 
+.galleryActions {
+  position: relative;
+  margin-top: 0.75rem;
+  display: inline-flex;
+}
+
 .thumbBtn {
   padding: 0;
   border: 2px solid transparent;

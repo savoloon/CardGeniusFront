@@ -1,5 +1,6 @@
 import { useLanguage } from '../../../contexts/LanguageContext';
 import type { TextLayer } from '../../../types/infographicEditor';
+import { normalizeInfographicFont } from '../../../constants/infographicFonts';
 import styles from './InfographicEditor.module.css';
 
 interface InfographicTextLayerProps {
@@ -59,7 +60,7 @@ export default function InfographicTextLayer({
           onPointerDown={(e) => e.stopPropagation()}
           rows={Math.min(8, Math.max(2, layer.text.split('\n').length))}
           style={{
-            fontFamily: layer.fontFamily,
+            fontFamily: normalizeInfographicFont(layer.fontFamily),
             fontSize: `${layer.fontSize}px`,
             color: layer.color,
             fontWeight: layer.fontWeight,

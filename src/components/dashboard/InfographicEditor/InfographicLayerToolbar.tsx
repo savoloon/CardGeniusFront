@@ -1,5 +1,9 @@
 import { useLanguage } from '../../../contexts/LanguageContext';
-import { INFOGRAPHIC_FONT_OPTIONS } from '../../../constants/infographicFonts';
+import {
+  INFOGRAPHIC_FONT_OPTIONS,
+  infographicFontPrimaryName,
+  normalizeInfographicFont,
+} from '../../../constants/infographicFonts';
 import type { TextLayer } from '../../../types/infographicEditor';
 import styles from './InfographicEditor.module.css';
 
@@ -24,12 +28,12 @@ export default function InfographicLayerToolbar({ layer, onUpdate }: Infographic
         {t('dashboard.infographicFont')}
         <select
           className={styles.toolSelect}
-          value={layer.fontFamily}
+          value={normalizeInfographicFont(layer.fontFamily)}
           onChange={(e) => onUpdate(layer.id, { fontFamily: e.target.value })}
         >
           {INFOGRAPHIC_FONT_OPTIONS.map((f) => (
             <option key={f} value={f}>
-              {f.split(',')[0].replace(/"/g, '')}
+              {infographicFontPrimaryName(f)}
             </option>
           ))}
         </select>

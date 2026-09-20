@@ -7,11 +7,14 @@ import type { EditorTool } from './types';
 import {
   TEXT_OBJECT_KEY,
   applySnapshotToIText,
+  applyTextLayersToCanvas,
   isTextObject,
   snapshotFromIText,
 } from './fabricTextUtils';
 import type { FabricTextSnapshot } from './fabricTextTypes';
 import { loadImageElement } from '../../lib/loadImageElement';
+import { DEFAULT_INFOGRAPHIC_FONT, normalizeInfographicFont } from '../../constants/infographicFonts';
+import { exportFabricCanvas, type ExportImageFormat } from './composeExport';
 import { hexToRgb, rgbToHex } from './colorUtils';
 import { floodFillOverlay } from './floodFill';
 import {
@@ -40,7 +43,7 @@ function cloneCanvas(src: HTMLCanvasElement): HTMLCanvasElement {
 
 export interface ImageEditorStageHandle {
   getCanvas: () => Canvas | null;
-  exportBlob: (format: 'png' | 'jpeg', quality?: number) => Promise<Blob>;
+  exportBlob: (format: ExportImageFormat, quality?: number) => Promise<Blob>;
   clearDrawing: () => void;
   loadBackground: (url: string) => Promise<void>;
   serialize: () => string;
@@ -612,12 +615,7 @@ const ImageEditorStage = forwardRef<ImageEditorStageHandle, ImageEditorStageProp
           if (rect) rect.set({ visible: false });
           c.renderAll();
           try {
-            const dataUrl =
-              format === 'jpeg'
-                ? c.toDataURL({ format: 'jpeg', quality, multiplier: 1 })
-                : c.toDataURL({ format: 'png', multiplier: 1 });
-            const res = await fetch(dataUrl);
-            return res.blob();
+            return await exportFabricCanvas(c, format, quality);
           } finally {
             if (rect) {
               rect.set({ visible: true });
@@ -669,7 +667,7 @@ const ImageEditorStage = forwardRef<ImageEditorStageHandle, ImageEditorStageProp
                 text: it.text ?? '',
                 x: ((o.left ?? 0) / cw) * 100,
                 y: ((o.top ?? 0) / ch) * 100,
-                fontFamily: String(it.fontFamily ?? 'Inter, sans-serif'),
+                fontFamily: normalizeInfographicFont(String(it.fontFamily ?? DEFAULT_INFOGRAPHIC_FONT)),
                 fontSize: Number(it.fontSize ?? 18),
                 color: String(it.fill ?? '#1a1a1a'),
                 fontWeight: it.fontWeight === 'bold' ? 700 : 400,
@@ -686,28 +684,7 @@ const ImageEditorStage = forwardRef<ImageEditorStageHandle, ImageEditorStageProp
         applyTextLayers: (layers: TextLayer[]) => {
           const c = canvasRef.current;
           if (!c) return;
-          c.getObjects()
-            .filter((o) => o.type === 'i-text')
-            .forEach((o) => c.remove(o));
-          const cw = c.getWidth();
-          const ch = c.getHeight();
-          for (const layer of layers) {
-            const it = new IText(layer.text, {
-              left: (layer.x / 100) * cw,
-              top: (layer.y / 100) * ch,
-              fontFamily: layer.fontFamily,
-              fontSize: layer.fontSize,
-              fill: layer.color,
-              fontWeight: layer.fontWeight >= 600 ? 'bold' : 'normal',
-              fontStyle: layer.fontStyle,
-              angle: layer.rotation,
-              backgroundColor:
-                layer.backgroundColor === 'transparent' ? '' : layer.backgroundColor,
-            });
-            it.set(TEXT_OBJECT_KEY, true);
-            c.add(it);
-          }
-          c.renderAll();
+          applyTextLayersToCanvas(c, layers);
         },
         setDirtyListener: (fn) => {
           dirtyListenerRef.current = fn;
@@ -759,7 +736,7 @@ const ImageEditorStage = forwardRef<ImageEditorStageHandle, ImageEditorStageProp
         const it = new IText('Text', {
           left: pointer.x,
           top: pointer.y,
-          fontFamily: 'Inter, system-ui, sans-serif',
+          fontFamily: DEFAULT_INFOGRAPHIC_FONT,
           fontSize: 18,
           fill: brushColor,
         });
@@ -792,7 +769,7 @@ export function placeRecommendedOnCanvas(canvas: Canvas, item: InfographicRecomm
   const it = new IText(item.text, {
     left: (x / 100) * cw,
     top: (y / 100) * ch,
-    fontFamily: 'Inter, system-ui, sans-serif',
+    fontFamily: DEFAULT_INFOGRAPHIC_FONT,
     fontSize: 18,
     fill: '#1a1a1a',
     fontWeight: 'bold',

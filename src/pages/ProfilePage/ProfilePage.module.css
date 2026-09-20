@@ -89,6 +89,20 @@
   margin-bottom: 1rem;
 }
 
+.licenseNote {
+  margin: 1.25rem 0 0;
+  font-size: 0.8125rem;
+}
+
+.licenseNote a {
+  color: var(--color-text-dim);
+  text-underline-offset: 0.15em;
+}
+
+.licenseNote a:hover {
+  color: var(--color-accent);
+}
+
 @media (max-width: 900px) {
   .header {
     flex-direction: column;
