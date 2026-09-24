@@ -10,9 +10,9 @@ const STEP_KEYS = [
 
 /* Визуалы для шагов — примеры результата */
 const STEP_IMAGES = [
-  'https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=400&h=300&fit=crop',
-  'https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=400&h=300&fit=crop',
+  '/Загрузите.png',
+  'Выберите волшебство.png',
+  'Качайте и выигрывайте.png',
 ];
 
 export default function SolutionSection() {
@@ -35,7 +35,7 @@ export default function SolutionSection() {
           >
             <div className={styles.stepVisual}>
               <img src={STEP_IMAGES[index]} alt={t(`landing.${step.titleKey}`)} />
-              <div className={styles.stepNum}>{step.num}</div>
+              {/* <div className={styles.stepNum}>{step.num}</div> */}
             </div>
             <div className={styles.stepContent}>
               <h3 className={styles.stepTitle}>{t(`landing.${step.titleKey}`)}</h3>

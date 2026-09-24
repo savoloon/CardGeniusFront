@@ -8,16 +8,16 @@ const SLIDER_KEYS = ['heroSliderAlt1', 'heroSliderAlt2', 'heroSliderAlt3'] as co
 
 const SLIDER_ITEMS = [
   {
-    before: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=400&fit=crop',
-    after: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=400&fit=crop',
+    before: '/часы до.png',
+    after: '/часы после.png',
   },
   {
-    before: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=600&h=400&fit=crop',
-    after: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=400&fit=crop',
+    before: '/телефон до.png',
+    after: '/телефон после.png',
   },
   {
-    before: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=600&h=400&fit=crop',
-    after: 'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?w=600&h=400&fit=crop',
+    before: '/кроссовки до.png',
+    after: '/кроссовки после.png',
   },
 ];
 

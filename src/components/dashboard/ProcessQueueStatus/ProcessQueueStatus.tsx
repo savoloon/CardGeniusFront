@@ -2,12 +2,12 @@ import { useLanguage } from '../../../contexts/LanguageContext';
 import styles from './ProcessQueueStatus.module.css';
 
 interface ProcessQueueStatusProps {
-  status: 'pending' | 'completed' | 'failed';
+  status: 'pending' | 'processing' | 'completed' | 'failed';
 }
 
 export default function ProcessQueueStatus({ status }: ProcessQueueStatusProps) {
   const { t } = useLanguage();
-  if (status === 'pending') {
+  if (status === 'pending' || status === 'processing') {
     return (
       <div className={styles.wrapper}>
         <div className={styles.spinner} aria-hidden />

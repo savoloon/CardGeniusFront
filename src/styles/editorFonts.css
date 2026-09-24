@@ -1,0 +1,37 @@
+/* Self-hosted editor + UI fonts (latin, latin-ext, cyrillic via unicode-range). */
+
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource/inter/400-italic.css';
+@import '@fontsource/inter/700-italic.css';
+
+@import '@fontsource/roboto/400.css';
+@import '@fontsource/roboto/700.css';
+@import '@fontsource/roboto/400-italic.css';
+@import '@fontsource/roboto/700-italic.css';
+
+@import '@fontsource/montserrat/400.css';
+@import '@fontsource/montserrat/700.css';
+@import '@fontsource/montserrat/400-italic.css';
+@import '@fontsource/montserrat/700-italic.css';
+
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
+@import '@fontsource/manrope/800.css';
+
+@import '@fontsource/oswald/400.css';
+@import '@fontsource/oswald/700.css';
+
+@import '@fontsource/pt-serif/400.css';
+@import '@fontsource/pt-serif/700.css';
+@import '@fontsource/pt-serif/400-italic.css';
+@import '@fontsource/pt-serif/700-italic.css';
+
+@import '@fontsource/jetbrains-mono/400.css';
+@import '@fontsource/jetbrains-mono/700.css';
+@import '@fontsource/jetbrains-mono/400-italic.css';
+@import '@fontsource/jetbrains-mono/700-italic.css';

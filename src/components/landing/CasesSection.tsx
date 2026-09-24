@@ -8,22 +8,22 @@ const CASE_KEYS = [
     categoryKey: 'casesCategory1',
     resultKey: 'casesResult1',
     storyKey: 'casesStory1',
-    before: 'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400&h=500&fit=crop',
-    after: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400&h=500&fit=crop',
+    before: '/часы после.png',
+    after: '/часы до.png',
   },
   {
     categoryKey: 'casesCategory2',
     resultKey: 'casesResult2',
     storyKey: 'casesStory2',
-    before: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&h=500&fit=crop',
-    after: 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=400&h=500&fit=crop',
+    before: '/телефон после.png',
+    after: '/телефон до.png',
   },
   {
     categoryKey: 'casesCategory3',
     resultKey: 'casesResult3',
     storyKey: 'casesStory3',
-    before: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=400&h=500&fit=crop',
-    after: 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=400&h=500&fit=crop',
+    before: '/кроссовки после.png',
+    after: '/кроссовки до.png',
   },
 ];
 

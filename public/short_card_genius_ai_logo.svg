@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180" fill="none">
+  <defs>
+    <linearGradient id="brandGradient" x1="24" y1="20" x2="142" y2="150" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+
+    <linearGradient id="shineGradient" x1="50" y1="45" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E9D5FF"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Основной знак -->
+  <rect
+    x="18"
+    y="18"
+    width="144"
+    height="144"
+    rx="40"
+    fill="url(#brandGradient)"
+  />
+
+  <!-- Стилизованная карточка товара -->
+  <rect
+    x="49"
+    y="55"
+    width="72"
+    height="72"
+    rx="16"
+    stroke="white"
+    stroke-width="8"
+  />
+
+  <!-- Условное изображение товара -->
+  <path
+    d="M69 91L79 78L89 91L101 74L111 91"
+    stroke="white"
+    stroke-width="7"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+
+  <path
+    d="M69 107H111"
+    stroke="white"
+    stroke-width="7"
+    stroke-linecap="round"
+  />
+
+  <!-- AI-искра -->
+  <path
+    d="M128 34L133 47L146 52L133 57L128 70L123 57L110 52L123 47L128 34Z"
+    fill="white"
+  />
+
+  <path
+    d="M43 35L46 42L53 45L46 48L43 55L40 48L33 45L40 42L43 35Z"
+    fill="url(#shineGradient)"
+  />
+
+  <!-- Дополнительные искры -->
+  <circle
+    cx="139"
+    cy="82"
+    r="4"
+    fill="white"
+  />
+
+  <circle
+    cx="35"
+    cy="72"
+    r="3"
+    fill="white"
+  />
+</svg>

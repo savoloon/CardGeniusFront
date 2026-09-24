@@ -32,3 +32,16 @@
   font-size: 0.8125rem;
   color: var(--color-text-dim);
 }
+
+.licenseLink {
+  display: inline-block;
+  margin-top: 0.65rem;
+  font-size: 0.8125rem;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.licenseLink:hover {
+  color: var(--color-accent);
+}

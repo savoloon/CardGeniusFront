@@ -9,7 +9,7 @@ const PAIN_KEYS = [
   { icon: '🛒', textKey: 'pains4', detailKey: 'pains4Detail' },
 ];
 
-const CHAOS_IMAGE = 'https://images.unsplash.com/photo-1507925921958-8a62f3d1a50d?w=800&h=500&fit=crop';
+const CHAOS_IMAGE = '/хаос.png';
 
 export default function PainsSection() {
   const { ref, isVisible } = useScrollReveal<HTMLElement>();

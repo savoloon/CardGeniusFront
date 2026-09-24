@@ -10,6 +10,8 @@ interface ImageUploadZoneProps {
   disabled?: boolean;
   /** Shorter drop zone for dense sidebars */
   compact?: boolean;
+  /** Large preview for setup step */
+  hero?: boolean;
 }
 
 const ACCEPT = 'image/jpeg,image/png,image/webp';
@@ -22,6 +24,7 @@ export default function ImageUploadZone({
   onClear,
   disabled,
   compact,
+  hero,
 }: ImageUploadZoneProps) {
   const { t } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -61,7 +64,7 @@ export default function ImageUploadZone({
   return (
     <div className={styles.wrapper}>
       <div
-        className={`${styles.zone} ${compact ? styles.zoneCompact : ''} ${image ? styles.zoneFilled : ''} ${disabled ? styles.disabled : ''}`}
+        className={`${styles.zone} ${compact ? styles.zoneCompact : ''} ${hero ? styles.zoneHero : ''} ${image ? styles.zoneFilled : ''} ${disabled ? styles.disabled : ''}`}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onClick={handleClick}
@@ -80,14 +83,20 @@ export default function ImageUploadZone({
         />
         {previewUrl ? (
           <div className={styles.preview}>
-            <img src={previewUrl} alt={t('dashboard.uploadPreview')} />
             {!disabled && (
-              <span className={styles.hint}>{t('dashboard.uploadHint')}</span>
+              <span className={`${styles.hint} ${hero ? styles.hintTop : ''}`}>
+                {t('dashboard.uploadHint')}
+              </span>
             )}
+            <div className={styles.previewBody}>
+              <img src={previewUrl} alt={t('dashboard.uploadPreview')} />
+            </div>
           </div>
         ) : (
           <div className={styles.placeholder}>
-            <span className={styles.icon}>↗</span>
+            <span className={styles.iconRing} aria-hidden>
+              <span className={styles.iconGlyph}>+</span>
+            </span>
             <span className={styles.text}>{t('dashboard.uploadImage')}</span>
             <span className={styles.sub}>{t('dashboard.uploadFormats')}</span>
           </div>

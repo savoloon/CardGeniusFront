@@ -41,6 +41,14 @@ export default function LandingPage() {
             <p className={styles.copyright}>
               {t('landing.footerCopy', { year: new Date().getFullYear() })}
             </p>
+            <a
+              className={styles.licenseLink}
+              href="/licenses/OFL.txt"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t('common.fontLicenses')}
+            </a>
           </div>
         </footer>
       </main>
