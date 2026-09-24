@@ -1,7 +1,9 @@
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import type { ProcessMode } from '../../../services/api';
-import { Input } from '../../ui';
+import { generateExpositionIdea } from '../../../services/api';
+import { Input, Button } from '../../ui';
 import { useLanguage } from '../../../contexts/LanguageContext';
+import { useApiErrorMessage } from '../../../hooks/useApiErrorMessage';
 import styles from './ProcessOptions.module.css';
 
 interface ProcessOptionsProps {
@@ -37,6 +39,29 @@ function ProcessOptionsInner({
   className,
 }: ProcessOptionsProps) {
   const { t } = useLanguage();
+  const getErrorMessage = useApiErrorMessage();
+
+  const [idea, setIdea] = useState('');
+  const [ideaLoading, setIdeaLoading] = useState(false);
+  const [ideaError, setIdeaError] = useState<string | null>(null);
+
+  const handleGenerateIdea = async () => {
+    if (!idea.trim() || ideaLoading || disabled) return;
+    setIdeaLoading(true);
+    setIdeaError(null);
+    try {
+      const res = await generateExpositionIdea(idea.trim());
+      if (res.success && res.data?.prompt) {
+        onPromptChange(res.data.prompt);
+      } else {
+        setIdeaError(res.message || t('dashboard.ideaError'));
+      }
+    } catch (err) {
+      setIdeaError(getErrorMessage(err) || t('dashboard.ideaError'));
+    } finally {
+      setIdeaLoading(false);
+    }
+  };
 
   const needsVariants =
     mode === 'generate_background' ||
@@ -61,6 +86,28 @@ function ProcessOptionsInner({
           {/* Поле промпта: для «Экспозиция по промпту» и опционально для инфографики */}
           {needsPrompt && (
             <div className={`${styles.fieldBlock} ${mode === 'generate_exposition_by_request' ? styles.promptRequired : ''}`}>
+              {mode === 'generate_exposition_by_request' && (
+                <div className={styles.ideaBlock}>
+                  <Input
+                    label={t('dashboard.ideaLabel')}
+                    placeholder={t('dashboard.ideaPlaceholder')}
+                    value={idea}
+                    onChange={(e) => setIdea(e.target.value)}
+                    disabled={disabled || ideaLoading}
+                  />
+                  <p className={styles.hint}>{t('dashboard.ideaHint')}</p>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleGenerateIdea}
+                    disabled={disabled || !idea.trim()}
+                    loading={ideaLoading}
+                  >
+                    {t('dashboard.generateIdeaBtn')}
+                  </Button>
+                  {ideaError && <p className={styles.errorText}>{ideaError}</p>}
+                </div>
+              )}
               <Input
                 label={t('dashboard.promptLabel')}
                 placeholder={t('dashboard.promptPlaceholder')}

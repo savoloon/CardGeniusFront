@@ -382,6 +382,21 @@ export async function generateDescription(
   });
 }
 
+export interface GenerateExpositionIdeaResponse {
+  success: boolean;
+  message?: string;
+  data?: { prompt: string };
+}
+
+export async function generateExpositionIdea(
+  userIdea: string
+): Promise<GenerateExpositionIdeaResponse> {
+  return request<GenerateExpositionIdeaResponse>('/process/exposition-idea', {
+    method: 'POST',
+    body: JSON.stringify({ user_idea: userIdea }),
+  });
+}
+
 export async function getProcessStatus(
   taskId: string
 ): Promise<ProcessStatusResponse> {
