@@ -9,3 +9,4 @@ export { default as ToolsSection } from './ToolsSection';
 export { default as TrustSection } from './TrustSection';
 export { default as PricingSection } from './PricingSection';
 export { default as FinalCTASection } from './FinalCTASection';
+export { default as GrantorsSection } from './GrantorsSection';

@@ -8,6 +8,7 @@ export default defineConfig({
   server: {
     host: true,
     port: 5173,
+    allowedHosts: ['card-genius.ru', '.card-genius.ru'],
     // Docker Desktop on Windows often misses native FS events on bind mounts
     watch: {
       usePolling: true,

@@ -325,6 +325,11 @@ const ru: Record<string, unknown> = {
     heroSecondary: 'Как это работает',
     footerLogo: '◇ Card Genius AI',
     footerCopy: '© {year} Card Genius AI. Карточки товаров для маркетплейсов.',
+    grantorsAria: 'Грантодатели',
+    grantorsFsiAlt: 'Фонд содействия инновациям',
+    grantorsPlatformAlt: 'Платформа университетского технологического предпринимательства',
+    grantorsText:
+      'Проект реализован при поддержке Фонда содействия инновациям в рамках программы «Студенческий стартап» мероприятия «Платформа университетского технологического предпринимательства» федерального проекта «Технологии».',
     fontLicenses: 'Лицензии шрифтов',
     heroSliderAlt1: 'Часы: скучное фото → стильный лукбук',
     heroSliderAlt2: 'Обувь: базовая съёмка → продающий визуал',
@@ -765,6 +770,11 @@ const en: Record<string, unknown> = {
     heroSecondary: 'How it works',
     footerLogo: '◇ Card Genius AI',
     footerCopy: '© {year} Card Genius AI. Product cards for marketplaces.',
+    grantorsAria: 'Grant providers',
+    grantorsFsiAlt: 'Foundation for Assistance to Innovations',
+    grantorsPlatformAlt: 'University Technological Entrepreneurship Platform',
+    grantorsText:
+      'The project was implemented with the support of the Foundation for Assistance to Innovations under the Student Startup program of the University Technological Entrepreneurship Platform event of the federal Technologies project.',
     fontLicenses: 'Font licenses',
     heroSliderAlt1: 'Watch: boring photo → stylish lookbook',
     heroSliderAlt2: 'Shoes: basic shot → compelling visual',

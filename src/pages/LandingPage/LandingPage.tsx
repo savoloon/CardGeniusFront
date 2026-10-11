@@ -13,6 +13,7 @@ import {
   TrustSection,
   PricingSection,
   FinalCTASection,
+  GrantorsSection,
 } from '../../components/landing';
 import styles from './LandingPage.module.css';
 
@@ -35,6 +36,7 @@ export default function LandingPage() {
         <TrustSection />
         <PricingSection />
         <FinalCTASection />
+        <GrantorsSection />
         <footer className={styles.footer}>
           <div className={styles.footerInner}>
             <span className={styles.logo}>{t('landing.footerLogo')}</span>
