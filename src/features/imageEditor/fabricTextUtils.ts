@@ -1,4 +1,4 @@
-import { IText, type Canvas } from 'fabric';
+import { IText, Textbox, type Canvas } from 'fabric';
 import type { FabricTextSnapshot } from './fabricTextTypes';
 import type { TextLayer } from '../../types/infographicEditor';
 import {
@@ -66,7 +66,8 @@ export function applyTextLayersToCanvas(canvas: Canvas, layers: TextLayer[]): vo
   const cw = canvas.getWidth();
   const ch = canvas.getHeight();
   for (const layer of layers) {
-    const it = new IText(layer.text, {
+    const hasBg = Boolean(layer.backgroundColor && layer.backgroundColor !== 'transparent');
+    const shared = {
       left: (layer.x / 100) * cw,
       top: (layer.y / 100) * ch,
       fontFamily: normalizeInfographicFont(layer.fontFamily),
@@ -74,9 +75,17 @@ export function applyTextLayersToCanvas(canvas: Canvas, layers: TextLayer[]): vo
       fill: layer.color,
       fontWeight: layer.fontWeight >= 600 ? 'bold' : 'normal',
       fontStyle: layer.fontStyle,
+      textAlign: layer.textAlign,
       angle: layer.rotation,
-      backgroundColor: layer.backgroundColor === 'transparent' ? '' : layer.backgroundColor,
-    });
+      backgroundColor: hasBg ? layer.backgroundColor : '',
+      padding: hasBg ? Math.round(layer.fontSize * 0.45) : 0,
+      originX: 'left' as const,
+      originY: 'top' as const,
+    };
+    const it =
+      layer.width && layer.width > 0
+        ? new Textbox(layer.text, { ...shared, width: layer.width, lineHeight: 1.2 })
+        : new IText(layer.text, shared);
     it.set(TEXT_OBJECT_KEY, true);
     canvas.add(it);
   }

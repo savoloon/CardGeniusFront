@@ -1,0 +1,80 @@
+.page {
+  width: 100%;
+  max-width: 760px;
+  min-width: 0;
+}
+
+.title {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.75rem, 3vw, 2.35rem);
+}
+
+.lead {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 1.0625rem;
+  line-height: 1.6;
+}
+
+.body {
+  margin-top: 2rem;
+}
+
+.placeholder {
+  margin: 0;
+  padding: 1.25rem 1.35rem;
+  border-radius: var(--radius-md);
+  border: 1px dashed rgba(255, 255, 255, 0.16);
+  background: var(--color-bg-card);
+  color: var(--color-text-muted);
+}
+
+[data-theme='light'] .placeholder {
+  border-color: rgba(15, 23, 42, 0.16);
+}
+
+.facts {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.fact {
+  padding: 1rem 1.2rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--color-bg-card);
+}
+
+[data-theme='light'] .fact {
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.fact dt {
+  margin: 0 0 0.3rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-dim);
+}
+
+.fact dd {
+  margin: 0;
+  color: var(--color-text);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.fact a {
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.fact a:hover {
+  color: var(--color-accent);
+}
+
+.cross {
+  margin: 1.25rem 0 0;
+}

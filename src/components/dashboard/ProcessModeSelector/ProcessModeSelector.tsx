@@ -55,6 +55,7 @@ export default function ProcessModeSelector({
           </button>
         ))}
       </div>
+      <p className={styles.modeHint}>{t('dashboard.modeExclusiveHint')}</p>
       {onIncludeCardTextsChange && (
         <div className={styles.cardTextsAddon}>
           <Checkbox

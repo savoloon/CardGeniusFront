@@ -144,6 +144,13 @@ export default function LoginForm({ onSuccess }: LoginFormProps) {
           {t('common.login')}
         </Button>
 
+        <p className={styles.legalNote}>
+          {t('auth.legalBefore')}{' '}
+          <Link to="/offer">{t('auth.legalOffer')}</Link>
+          {t('auth.legalBetween')}{' '}
+          <Link to="/privacy">{t('auth.legalPrivacy')}</Link>.
+        </p>
+
         <p className={styles.footer}>
           {t('auth.noAccount')}{' '}
           <Link to="/register" className={styles.link}>

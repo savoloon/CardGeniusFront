@@ -1,6 +1,9 @@
 export interface InfographicRecommendedItem {
   text: string;
   position: string;
+  font?: string | null;
+  tone?: string | null;
+  badge?: string | null;
 }
 
 export interface TextLayer {
@@ -19,6 +22,8 @@ export interface TextLayer {
   textAlign: 'left' | 'center' | 'right';
   direction: 'ltr' | 'rtl';
   backgroundColor: string;
+  /** Text box width in stage pixels. Present for wrapped badges. */
+  width?: number;
 }
 
 export interface InfographicVariantSnapshot {

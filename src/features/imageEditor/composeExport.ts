@@ -42,14 +42,14 @@ export function canvasElementToBlob(
   });
 }
 
-function getExportCanvasElement(canvas: Canvas): HTMLCanvasElement {
+function getExportCanvasElement(canvas: Canvas, multiplier: number): HTMLCanvasElement {
   const fabricCanvas = canvas as Canvas & {
     toCanvasElement?: (multiplier?: number) => HTMLCanvasElement;
     lowerCanvasEl?: HTMLCanvasElement;
     getElement?: () => HTMLCanvasElement;
   };
   if (typeof fabricCanvas.toCanvasElement === 'function') {
-    return fabricCanvas.toCanvasElement(1);
+    return fabricCanvas.toCanvasElement(multiplier);
   }
   const el = fabricCanvas.lowerCanvasEl ?? fabricCanvas.getElement?.();
   if (!el) throw new Error('No canvas');
@@ -59,24 +59,54 @@ function getExportCanvasElement(canvas: Canvas): HTMLCanvasElement {
 export async function exportFabricCanvas(
   canvas: Canvas,
   format: ExportImageFormat,
-  quality = 0.92
+  quality = 0.92,
+  multiplier = 1
 ): Promise<Blob> {
   await ensureInfographicFontsReady();
   canvas.renderAll();
-  const el = getExportCanvasElement(canvas);
+  const scale = multiplier > 0 ? multiplier : 1;
+  const el = getExportCanvasElement(canvas, scale);
   try {
     return await canvasElementToBlob(el, format, quality);
   } catch {
     const dataUrl = canvas.toDataURL({
       format: format === 'png' ? 'png' : format,
       quality,
-      multiplier: 1,
+      multiplier: scale,
     });
     const res = await fetch(dataUrl);
     const blob = await res.blob();
     if (!blob.size) throw new Error('Export failed');
     return blob;
   }
+}
+
+function wrapCanvasLines(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number
+): string[] {
+  const paragraphs = text.split('\n');
+  const lines: string[] = [];
+  for (const paragraph of paragraphs) {
+    const words = paragraph.split(/\s+/).filter((word) => word.length > 0);
+    if (words.length === 0) {
+      lines.push('');
+      continue;
+    }
+    let current = '';
+    for (const word of words) {
+      const next = current ? `${current} ${word}` : word;
+      if (ctx.measureText(next).width <= maxWidth || !current) {
+        current = next;
+      } else {
+        lines.push(current);
+        current = word;
+      }
+    }
+    if (current) lines.push(current);
+  }
+  return lines.length ? lines : [''];
 }
 
 export function drawTextLayersOnContext(
@@ -94,19 +124,26 @@ export function drawTextLayersOnContext(
     ctx.rotate((layer.rotation * Math.PI) / 180);
     const italic = layer.fontStyle === 'italic' ? 'italic ' : '';
     ctx.font = `${italic}${layer.fontWeight} ${layer.fontSize}px ${family}`;
-    ctx.textAlign = layer.textAlign;
     ctx.textBaseline = 'top';
-    const lines = layer.text.split('\n');
+    ctx.textAlign = 'left';
+    const boxWidth = layer.width && layer.width > 0 ? layer.width : undefined;
+    const lines = boxWidth ? wrapCanvasLines(ctx, layer.text, boxWidth) : layer.text.split('\n');
+    const measured = lines.map((line) => ctx.measureText(line).width);
+    const contentWidth = boxWidth ?? Math.max(0, ...measured);
     const lineHeight = layer.fontSize * 1.2;
-    if (layer.backgroundColor && layer.backgroundColor !== 'transparent') {
-      const maxWidth = Math.max(0, ...lines.map((line) => ctx.measureText(line).width));
-      const pad = 6;
+    const hasBg = Boolean(layer.backgroundColor && layer.backgroundColor !== 'transparent');
+    const pad = hasBg ? Math.max(4, layer.fontSize * 0.45) : 0;
+    if (hasBg) {
       ctx.fillStyle = layer.backgroundColor;
-      ctx.fillRect(-pad, -pad, maxWidth + pad * 2, lineHeight * lines.length + pad * 2);
+      ctx.fillRect(-pad, -pad, contentWidth + pad * 2, lineHeight * lines.length + pad * 2);
     }
     ctx.fillStyle = layer.color;
     lines.forEach((line, i) => {
-      ctx.fillText(line, 0, i * lineHeight);
+      const lineWidth = measured[i] ?? 0;
+      let dx = 0;
+      if (layer.textAlign === 'center') dx = (contentWidth - lineWidth) / 2;
+      else if (layer.textAlign === 'right') dx = contentWidth - lineWidth;
+      ctx.fillText(line, dx, i * lineHeight);
     });
     ctx.restore();
   }

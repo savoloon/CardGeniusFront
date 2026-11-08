@@ -1,10 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   getProcessStatus,
+  getMultiProcessStatus,
   getProcessResultImageUrl,
   getProcessSavedImageUrl,
   getVariantSave,
 } from '../services/api';
+import type { InfographicSlideApi, ProcessStatusData } from '../services/api';
+import { itemsForImage } from '../lib/infographicSlides';
 import type { InfographicRecommendedItem, TextLayer } from '../types/infographicEditor';
 import {
   buildProcessVariant,
@@ -30,18 +33,36 @@ function normalizeQueueStatus(raw: string | undefined): QueueStatus {
   return 'pending';
 }
 
+export interface CardTexts {
+  titles: string[];
+  descriptions: string[];
+}
+
 function buildVariantsFromTask(
   taskId: string,
   imageUrls: string[],
-  items: InfographicRecommendedItem[]
+  items: InfographicRecommendedItem[],
+  slides?: InfographicSlideApi[]
 ): ProcessVariant[] {
   return imageUrls.map((originalUrl, i) =>
     buildProcessVariant({
       taskId,
       resultIndex: i,
       originalUrl,
-      infographicItems: [...items],
+      infographicItems: itemsForImage(i, slides, items),
+      scenePrompt: slides?.[i]?.imagePrompt,
     })
+  );
+}
+
+function variantsFromStatus(task: ProcessStatusData): ProcessVariant[] {
+  const images = task.result?.images ?? [];
+  if (images.length === 0) return [];
+  return buildVariantsFromTask(
+    task.taskId,
+    images,
+    task.infographicItems ?? [],
+    task.infographicSlides
   );
 }
 
@@ -71,9 +92,11 @@ async function hydrateSavedVariants(variants: ProcessVariant[]): Promise<Process
 export function useProcessPolling() {
   const [queueStatus, setQueueStatus] = useState<QueueStatus>(null);
   const [variants, setVariants] = useState<ProcessVariant[]>([]);
+  const [cardTexts, setCardTexts] = useState<CardTexts>({ titles: [], descriptions: [] });
   const [activeResultIndex, setActiveResultIndex] = useState(0);
   const [resultSessionId, setResultSessionId] = useState<string | null>(null);
   const taskIdsRef = useRef<string[]>([]);
+  const textTaskIdsRef = useRef<string[]>([]);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const persistWorkspaceMeta = useCallback(
@@ -88,6 +111,7 @@ export function useProcessPolling() {
           resultIndex: v.resultIndex,
           displayBase: v.displayBase,
         })),
+        textTaskIds: textTaskIdsRef.current,
       };
       writeWorkspaceMeta(meta);
     },
@@ -115,9 +139,11 @@ export function useProcessPolling() {
   const resetResults = useCallback(() => {
     setQueueStatus(null);
     setVariants([]);
+    setCardTexts({ titles: [], descriptions: [] });
     setActiveResultIndex(0);
     setResultSessionId(null);
     taskIdsRef.current = [];
+    textTaskIdsRef.current = [];
     clearWorkspaceMeta();
   }, []);
 
@@ -145,10 +171,13 @@ export function useProcessPolling() {
         if (!res.success || !res.data) return;
         const status = normalizeQueueStatus(res.data.status);
         if (status === 'completed' && res.data.result?.images) {
-          const images = res.data.result.images;
-          const items = res.data.infographicItems ?? [];
-          const itemCopy = items.length > 0 ? [...items] : [];
-          const list = buildVariantsFromTask(id, images, itemCopy);
+          const list = variantsFromStatus(res.data);
+          if (res.data.titles?.length || res.data.descriptions?.length) {
+            setCardTexts({
+              titles: res.data.titles ?? [],
+              descriptions: res.data.descriptions ?? [],
+            });
+          }
           const sessionId = crypto.randomUUID();
           setResultSessionId(sessionId);
           // Apply variants before flipping to completed so the UI never lands on setup mid-hydrate.
@@ -175,28 +204,38 @@ export function useProcessPolling() {
 
   const pollAllTasks = useCallback(
     async (ids: string[]) => {
-      const responses = await Promise.all(ids.map((id) => getProcessStatus(id).catch(() => null)));
+      let tasks: ProcessStatusData[] = [];
+      try {
+        const res = await getMultiProcessStatus(ids);
+        if (!res.success || !res.data?.tasks?.length) return;
+        tasks = res.data.tasks;
+      } catch {
+        return;
+      }
 
       let finished = 0;
       const allVariants: ProcessVariant[] = [];
+      const titles: string[] = [];
+      const descriptions: string[] = [];
 
-      for (let t = 0; t < responses.length; t++) {
-        const res = responses[t];
-        const taskId = ids[t];
-        if (!res?.success || !res.data) continue;
-        if (res.data.status === 'completed' && res.data.result?.images) {
-          const items = res.data.infographicItems ?? [];
-          const itemCopy = items.length > 0 ? [...items] : [];
-          allVariants.push(...buildVariantsFromTask(taskId, res.data.result.images, itemCopy));
-          finished += 1;
-        } else if (res.data.status === 'failed') {
-          finished += 1;
+      for (const task of tasks) {
+        const status = normalizeQueueStatus(task.status);
+        if (status === 'completed' || status === 'failed') finished += 1;
+        if (status === 'completed') {
+          allVariants.push(...variantsFromStatus(task));
+          if (task.titles?.length) titles.push(...task.titles);
+          if (task.descriptions?.length) descriptions.push(...task.descriptions);
         }
       }
 
-      if (finished === ids.length) {
+      if (finished === tasks.length) {
         stopPolling();
-        setQueueStatus(allVariants.length > 0 ? 'completed' : 'failed');
+        textTaskIdsRef.current = tasks
+          .filter((task) => (task.titles?.length ?? 0) > 0 || (task.descriptions?.length ?? 0) > 0)
+          .map((task) => task.taskId);
+        setCardTexts({ titles, descriptions });
+        const hasTexts = titles.length > 0 || descriptions.length > 0;
+        setQueueStatus(allVariants.length > 0 || hasTexts ? 'completed' : 'failed');
         const sessionId = crypto.randomUUID();
         setResultSessionId(sessionId);
         await applyVariants(allVariants, sessionId);
@@ -231,24 +270,38 @@ export function useProcessPolling() {
 
     const statusByTask = new Map<
       string,
-      { images: string[]; infographicItems: InfographicRecommendedItem[] }
+      {
+        images: string[];
+        infographicItems: InfographicRecommendedItem[];
+        infographicSlides?: InfographicSlideApi[];
+      }
     >();
     const uniqueTaskIds = [...new Set(meta.variants.map((m) => m.taskId))];
+    const textTaskIds = meta.textTaskIds ?? [];
+    const titles: string[] = [];
+    const descriptions: string[] = [];
     await Promise.all(
-      uniqueTaskIds.map(async (taskId) => {
+      [...new Set([...uniqueTaskIds, ...textTaskIds])].map(async (taskId) => {
         try {
           const statusRes = await getProcessStatus(taskId);
-          if (statusRes.success && statusRes.data?.result?.images) {
+          if (!statusRes.success || !statusRes.data) return;
+          if (statusRes.data.result?.images) {
             statusByTask.set(taskId, {
               images: statusRes.data.result.images,
               infographicItems: statusRes.data.infographicItems ?? [],
+              infographicSlides: statusRes.data.infographicSlides,
             });
           }
+          if (statusRes.data.titles?.length) titles.push(...statusRes.data.titles);
+          if (statusRes.data.descriptions?.length) descriptions.push(...statusRes.data.descriptions);
         } catch {
           /* ignore */
         }
       })
     );
+    if (titles.length > 0 || descriptions.length > 0) {
+      setCardTexts({ titles, descriptions });
+    }
 
     const list: ProcessVariant[] = meta.variants.map((m) => {
       const status = statusByTask.get(m.taskId);
@@ -258,7 +311,12 @@ export function useProcessPolling() {
         taskId: m.taskId,
         resultIndex: m.resultIndex,
         originalUrl,
-        infographicItems: status?.infographicItems ?? [],
+        infographicItems: itemsForImage(
+          m.resultIndex,
+          status?.infographicSlides,
+          status?.infographicItems
+        ),
+        scenePrompt: status?.infographicSlides?.[m.resultIndex]?.imagePrompt,
         displayBase: m.displayBase,
         savedUrl:
           m.displayBase === 'saved'
@@ -283,6 +341,7 @@ export function useProcessPolling() {
   return {
     queueStatus,
     setQueueStatus,
+    cardTexts,
     variants,
     setVariants,
     updateVariant,

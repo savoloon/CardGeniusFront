@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <title>Genius — logo icon</title>
+  <defs>
+    <linearGradient id="background" x1="48" y1="32" x2="464" y2="480" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Фиолетовый скруглённый квадрат -->
+  <rect width="512" height="512" rx="112" fill="url(#background)"/>
+
+  <!-- Буква G: цельная векторная форма, не зависит от установленных шрифтов -->
+  <path d="
+    M 354 159
+    C 328 128 289 110 247 110
+    C 169 110 111 171 111 250
+    C 111 329 169 390 247 390
+    C 320 390 365 344 365 274
+    L 365 244
+    L 267 244
+    L 267 291
+    L 311 291
+    C 303 321 280 340 248 340
+    C 198 340 165 302 165 250
+    C 165 198 198 160 248 160
+    C 277 160 301 172 319 193
+    Z"
+    fill="#FFFFFF"/>
+
+  <!-- Четырёхконечная искра -->
+  <path d="
+    M 399 105
+    C 404 132 417 145 444 150
+    C 417 155 404 168 399 195
+    C 394 168 381 155 354 150
+    C 381 145 394 132 399 105
+    Z"
+    fill="#FFFFFF"/>
+</svg>

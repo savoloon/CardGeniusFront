@@ -40,25 +40,18 @@
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  min-width: 0;
+  max-width: min(220px, 52vw);
+  line-height: 0;
 }
 
 .logo {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  color: var(--color-text);
-  transition: color var(--transition-fast);
+  line-height: 0;
 }
 
-.logoLink:hover .logo {
-  color: var(--color-accent);
-}
-
-.logoIcon {
-  color: var(--color-accent);
-  font-size: 1.125rem;
+.logoLink:hover {
+  opacity: 0.88;
 }
 
 .headerRight {
@@ -97,10 +90,6 @@
 @media (max-width: 480px) {
   .header {
     padding: 0.75rem 1rem;
-  }
-
-  .logo {
-    font-size: 1.125rem;
   }
 
   .main {

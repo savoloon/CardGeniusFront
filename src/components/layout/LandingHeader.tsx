@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Button, ThemeToggle, LanguageToggle } from '../ui';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import BrandLogo from '../brand/BrandLogo';
 import styles from './LandingHeader.module.css';
 
 const navKeys = ['menuHow', 'menuCases', 'menuTools', 'menuPricing'] as const;
@@ -22,8 +23,7 @@ export default function LandingHeader() {
     <header className={styles.header}>
       <div className={styles.inner}>
         <Link to="/" className={styles.logo}>
-          <span className={styles.logoIcon}>◇</span>
-          Card Genius AI
+          <BrandLogo />
         </Link>
 
         <nav className={`${styles.nav} ${menuOpen ? styles.navOpen : ''}`}>

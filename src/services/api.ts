@@ -276,6 +276,19 @@ export async function getAdminUsers(): Promise<AdminUsersResponse> {
   return request<AdminUsersResponse>('/admin/users');
 }
 
+export interface PublicPlan {
+  id: number;
+  name: string;
+  priceNew: number;
+  priceOld: number;
+  countByTasks: boolean;
+  limit: number;
+}
+
+export async function getPublicPlans(): Promise<{ success: boolean; data?: { plans: PublicPlan[] } }> {
+  return request('/plans');
+}
+
 export async function getAdminPlans(): Promise<AdminPlansResponse> {
   return request<AdminPlansResponse>('/admin/plans');
 }
@@ -313,16 +326,70 @@ export interface SubmitProcessResponse {
 export interface InfographicItemApi {
   text: string;
   position: string;
+  font?: string | null;
+  tone?: string | null;
+  badge?: string | null;
+}
+
+export interface InfographicSlideApi {
+  imagePrompt: string;
+  items: InfographicItemApi[];
+}
+
+export interface ProcessStatusData {
+  taskId: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  mode?: string;
+  processingType?: string;
+  batchSize?: number;
+  result?: { images: string[] };
+  infographicItems?: InfographicItemApi[];
+  infographicSlides?: InfographicSlideApi[];
+  titles?: string[];
+  descriptions?: string[];
+  error?: string;
+  imageRevisions?: number[];
+  regeneration?: {
+    index: number;
+    status: string;
+    error?: string;
+  };
 }
 
 export interface ProcessStatusResponse {
   success: boolean;
+  message?: string;
+  data?: ProcessStatusData;
+}
+
+export interface MultiTaskInput {
+  mode: string;
+  batch_size?: number;
+  prompt?: string;
+  product_name?: string;
+  product_description?: string;
+  batch_size_title?: number;
+  batch_size_description?: number;
+}
+
+export interface MultiTasksResponse {
+  success: boolean;
+  message?: string;
   data?: {
-    taskId: string;
-    status: 'pending' | 'processing' | 'completed' | 'failed';
-    result?: { images: string[] };
-    infographicItems?: InfographicItemApi[];
+    tasks: {
+      taskId: string;
+      status: string;
+      processingType?: string;
+      mode?: string;
+      batchSize?: number;
+    }[];
   };
+}
+
+export interface MultiStatusResponse {
+  success: boolean;
+  message?: string;
+  data?: { tasks: ProcessStatusData[] };
 }
 
 export async function submitProcess(
@@ -360,6 +427,31 @@ export async function submitProcess(
   return data;
 }
 
+export async function submitMultiProcess(
+  image: File,
+  tasks: MultiTaskInput[]
+): Promise<MultiTasksResponse> {
+  const formData = new FormData();
+  formData.append('image', image);
+  formData.append('tasks', JSON.stringify(tasks));
+  const response = await fetchWithAuth(`${API_URL}/process/multi`, {
+    method: 'POST',
+    body: formData,
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const error = new Error(data.message || response.statusText) as Error & ApiError;
+    error.response = { status: response.status, data };
+    throw error;
+  }
+  return data;
+}
+
+export async function getMultiProcessStatus(taskIds: string[]): Promise<MultiStatusResponse> {
+  const query = taskIds.map((id) => `taskIds=${encodeURIComponent(id)}`).join('&');
+  return request<MultiStatusResponse>(`/process/multi?${query}`);
+}
+
 export interface GenerateDescriptionResponse {
   success: boolean;
   message?: string;
@@ -389,18 +481,39 @@ export interface GenerateExpositionIdeaResponse {
 }
 
 export async function generateExpositionIdea(
-  userIdea: string
+  userIdea: string,
+  imageCount?: number
 ): Promise<GenerateExpositionIdeaResponse> {
   return request<GenerateExpositionIdeaResponse>('/process/exposition-idea', {
     method: 'POST',
-    body: JSON.stringify({ user_idea: userIdea }),
+    body: JSON.stringify({
+      user_idea: userIdea,
+      ...(imageCount ? { image_count: imageCount } : {}),
+    }),
   });
 }
 
 export async function getProcessStatus(
-  taskId: string
+  taskId: string,
+  options?: { format?: 'url' | 'base64' }
 ): Promise<ProcessStatusResponse> {
-  return request<ProcessStatusResponse>(`/process/${taskId}`);
+  const query = options?.format === 'url' ? '?format=url' : '';
+  return request<ProcessStatusResponse>(`/process/${taskId}${query}`);
+}
+
+export async function regenerateFrame(
+  taskId: string,
+  index: number,
+  instruction: string,
+  previousPrompt?: string
+): Promise<{ success: boolean; message?: string }> {
+  return request(`/process/${taskId}/results/${index}/regenerate`, {
+    method: 'POST',
+    body: JSON.stringify({
+      instruction,
+      ...(previousPrompt ? { previous_prompt: previousPrompt } : {}),
+    }),
+  });
 }
 
 // ——— History ———

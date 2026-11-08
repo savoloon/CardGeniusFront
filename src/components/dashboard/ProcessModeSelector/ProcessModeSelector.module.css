@@ -72,6 +72,13 @@
   opacity: 0.6;
 }
 
+.modeHint {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--color-text-dim);
+}
+
 .cardTextsAddon {
   margin-top: 0.15rem;
   padding-top: 0.75rem;

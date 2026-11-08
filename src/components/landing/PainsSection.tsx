@@ -9,8 +9,6 @@ const PAIN_KEYS = [
   { icon: '🛒', textKey: 'pains4', detailKey: 'pains4Detail' },
 ];
 
-const CHAOS_IMAGE = '/хаос.png';
-
 export default function PainsSection() {
   const { ref, isVisible } = useScrollReveal<HTMLElement>();
   const { t } = useLanguage();
@@ -38,15 +36,6 @@ export default function PainsSection() {
               </div>
             </div>
           ))}
-        </div>
-
-        <div className={`${styles.visual} ${isVisible ? styles.visible : ''}`}>
-          <div className={styles.imageWrap}>
-            <img src={CHAOS_IMAGE} alt={t('landing.painsImageAlt')} />
-            <div className={styles.imageOverlay}>
-              <span>{t('landing.painsOverlay')}</span>
-            </div>
-          </div>
         </div>
       </div>
     </section>

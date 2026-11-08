@@ -80,6 +80,24 @@ function ProcessOptionsInner({
     }
   };
 
+  const handleExpandInfographic = async () => {
+    if (!prompt.trim() || ideaLoading || disabled) return;
+    setIdeaLoading(true);
+    setIdeaError(null);
+    try {
+      const res = await generateExpositionIdea(prompt.trim(), variants);
+      if (res.success && res.data?.prompt) {
+        onPromptChange(res.data.prompt);
+      } else {
+        setIdeaError(res.message || t('dashboard.ideaError'));
+      }
+    } catch (err) {
+      setIdeaError(getErrorMessage(err) || t('dashboard.ideaError'));
+    } finally {
+      setIdeaLoading(false);
+    }
+  };
+
   const needsVariants =
     mode === 'generate_background' ||
     mode === 'generate_exposure' ||
@@ -127,26 +145,62 @@ function ProcessOptionsInner({
                 </div>
               )}
               <label className={styles.label} htmlFor="process-prompt">
-                {t('dashboard.promptLabel')}
+                {mode === 'generate_infographic'
+                  ? t('dashboard.infographicPromptLabel')
+                  : t('dashboard.promptLabel')}
               </label>
               <textarea
                 id="process-prompt"
                 className={styles.textarea}
-                placeholder={t('dashboard.promptPlaceholder')}
+                placeholder={
+                  mode === 'generate_infographic'
+                    ? t('dashboard.infographicPromptPlaceholder')
+                    : t('dashboard.promptPlaceholder')
+                }
                 value={prompt}
                 onChange={(e) => onPromptChange(e.target.value)}
-                disabled={disabled}
-                rows={2}
+                disabled={disabled || ideaLoading}
+                rows={mode === 'generate_infographic' ? 4 : 2}
                 aria-required={mode === 'generate_exposition_by_request'}
               />
-              <p className={styles.hint}>{t('dashboard.promptHint')}</p>
+              <p className={styles.hint}>
+                {mode === 'generate_infographic'
+                  ? t('dashboard.infographicPromptHint')
+                  : t('dashboard.promptHint')}
+              </p>
+              {mode === 'generate_infographic' && (
+                <div className={styles.ideaBlock}>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={handleExpandInfographic}
+                    disabled={disabled || !prompt.trim()}
+                    loading={ideaLoading}
+                  >
+                    {t('dashboard.expandInfographicBtn')}
+                  </Button>
+                  {ideaError && <p className={styles.errorText}>{ideaError}</p>}
+                </div>
+              )}
             </div>
           )}
           {/* Варианты (количество) */}
           {needsVariants && (
             <div className={styles.field}>
-              <label className={styles.label}>{t('dashboard.variantsLabel')}</label>
-              <div className={styles.variants} role="group" aria-label={t('dashboard.variantsLabel')}>
+              <label className={styles.label}>
+                {mode === 'generate_infographic'
+                  ? t('dashboard.cardFramesLabel')
+                  : t('dashboard.variantsLabel')}
+              </label>
+              <div
+                className={styles.variants}
+                role="group"
+                aria-label={
+                  mode === 'generate_infographic'
+                    ? t('dashboard.cardFramesLabel')
+                    : t('dashboard.variantsLabel')
+                }
+              >
                 {VARIANT_OPTIONS.map((n) => (
                   <button
                     key={n}

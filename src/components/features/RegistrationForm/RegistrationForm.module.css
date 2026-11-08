@@ -1,5 +1,5 @@
 .card {
-  max-width: 420px;
+  max-width: 520px;
   margin: 0 auto;
 }
 
@@ -46,4 +46,14 @@
 
 .link:hover {
   text-decoration: underline;
+}
+
+.consents {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.consents a {
+  font-weight: 600;
 }

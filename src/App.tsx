@@ -14,6 +14,10 @@ import HistoryPage from './pages/HistoryPage/HistoryPage';
 import HistoryDetailPage from './pages/HistoryDetailPage/HistoryDetailPage';
 import Layout from './components/layout/Layout';
 import DashboardLayout from './components/layout/DashboardLayout';
+import OfferPage from './pages/OfferPage/OfferPage';
+import PrivacyPage from './pages/PrivacyPage/PrivacyPage';
+import ContactsPage from './pages/ContactsPage/ContactsPage';
+import AboutPage from './pages/AboutPage/AboutPage';
 
 function App() {
   return (
@@ -36,6 +40,38 @@ function App() {
             element={
               <Layout>
                 <LoginPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/offer"
+            element={
+              <Layout>
+                <OfferPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/privacy"
+            element={
+              <Layout>
+                <PrivacyPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/contacts"
+            element={
+              <Layout>
+                <ContactsPage />
+              </Layout>
+            }
+          />
+          <Route
+            path="/about"
+            element={
+              <Layout>
+                <AboutPage />
               </Layout>
             }
           />

@@ -31,6 +31,18 @@
   border: 1px solid rgba(239, 68, 68, 0.3);
 }
 
+.legalNote {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: var(--color-text-dim);
+  text-align: center;
+}
+
+.legalNote a {
+  font-weight: 600;
+}
+
 .footer {
   margin: 0;
   font-size: 0.9375rem;

@@ -3,6 +3,8 @@ import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button, ThemeToggle, LanguageToggle } from '../ui';
 import { useLanguage } from '../../contexts/LanguageContext';
+import BrandLogo from '../brand/BrandLogo';
+import SiteFooter from './SiteFooter';
 import styles from './DashboardLayout.module.css';
 
 interface DashboardLayoutProps {
@@ -91,10 +93,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className={styles.inner}>
           <div className={styles.brand}>
             <Link to="/dashboard" className={styles.logo} onClick={closeMobileMenu}>
-              <span className={styles.logoIcon} aria-hidden>
-                ◇
-              </span>
-              <span className={styles.logoText}>Card Genius AI</span>
+              <BrandLogo />
             </Link>
           </div>
 
@@ -217,16 +216,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </header>
 
       <main className={styles.main}>{children}</main>
-      <footer className={styles.footer}>
-        <a
-          className={styles.licenseLink}
-          href="/licenses/OFL.txt"
-          target="_blank"
-          rel="noreferrer"
-        >
-          {t('common.fontLicenses')}
-        </a>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

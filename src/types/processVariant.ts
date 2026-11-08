@@ -13,6 +13,10 @@ export interface ProcessVariant {
   savedRevision?: number;
   textLayers: TextLayer[];
   infographicItems: InfographicRecommendedItem[];
+  /** Scene text of this frame, sent back when the user replaces it. */
+  scenePrompt?: string;
+  /** Last known server revision of this frame. Used to notice a finished replacement. */
+  imageRevision?: number;
   /** Keys of recommended lines already placed via «На место» (hidden from list). */
   usedRecommendedKeys: string[];
   dirty: boolean;
@@ -32,6 +36,8 @@ export function buildProcessVariant(params: {
   resultIndex: number;
   originalUrl: string;
   infographicItems?: InfographicRecommendedItem[];
+  scenePrompt?: string;
+  imageRevision?: number;
   displayBase?: VariantDisplayBase;
   savedUrl?: string;
   savedRevision?: number;
@@ -50,6 +56,8 @@ export function buildProcessVariant(params: {
     savedRevision: params.savedRevision,
     textLayers: params.textLayers ?? [],
     infographicItems: params.infographicItems ?? [],
+    scenePrompt: params.scenePrompt,
+    imageRevision: params.imageRevision,
     usedRecommendedKeys: params.usedRecommendedKeys ?? [],
     dirty: params.dirty ?? false,
   };

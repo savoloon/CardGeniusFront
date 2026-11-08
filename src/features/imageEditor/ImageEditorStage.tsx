@@ -1,8 +1,7 @@
 import { useEffect, useRef, useImperativeHandle, forwardRef, useCallback } from 'react';
-import { Canvas, FabricImage, PencilBrush, IText, FabricObject, Rect } from 'fabric';
+import { Canvas, FabricImage, PencilBrush, IText, Textbox, FabricObject, Rect } from 'fabric';
 import type { TextLayer } from '../../types/infographicEditor';
 import type { InfographicRecommendedItem } from '../../types/infographicEditor';
-import { getZoneCenter } from '../../lib/infographicZones';
 import type { EditorTool } from './types';
 import {
   TEXT_OBJECT_KEY,
@@ -15,6 +14,8 @@ import type { FabricTextSnapshot } from './fabricTextTypes';
 import { loadImageElement } from '../../lib/loadImageElement';
 import { DEFAULT_INFOGRAPHIC_FONT, normalizeInfographicFont } from '../../constants/infographicFonts';
 import { exportFabricCanvas, type ExportImageFormat } from './composeExport';
+import { coverPlacement, exportPixelMultiplier } from './imageFit';
+import { fitInfographicBadge, readImageLuminance, type FittedBadge } from './fitInfographicBadge';
 import { hexToRgb, rgbToHex } from './colorUtils';
 import { floodFillOverlay } from './floodFill';
 import {
@@ -73,19 +74,41 @@ interface ImageEditorStageProps {
   onBackgroundReady?: () => void;
 }
 
+function sourcePixelSize(el: HTMLImageElement | HTMLCanvasElement | undefined): {
+  width: number;
+  height: number;
+} {
+  if (!el) return { width: 0, height: 0 };
+  const width = 'naturalWidth' in el && el.naturalWidth ? el.naturalWidth : el.width;
+  const height = 'naturalHeight' in el && el.naturalHeight ? el.naturalHeight : el.height;
+  return { width, height };
+}
+
+function fitBackgroundImage(bg: FabricImage, width: number, height: number) {
+  const source = sourcePixelSize(bg.getElement() as HTMLImageElement | HTMLCanvasElement | undefined);
+  const placed = coverPlacement(width, height, source.width || width, source.height || height);
+  bg.set({
+    originX: 'left',
+    originY: 'top',
+    left: placed.left,
+    top: placed.top,
+    scaleX: placed.scale,
+    scaleY: placed.scale,
+  });
+  bg.setCoords();
+}
+
 function rescaleBackground(canvas: Canvas, width: number, height: number) {
   const bg = canvas.getObjects().find((o) => o.get(BACKGROUND_KEY));
   if (!(bg instanceof FabricImage)) return;
-  const el = bg.getElement() as HTMLImageElement | undefined;
-  const nw = el?.naturalWidth || width;
-  const nh = el?.naturalHeight || height;
-  bg.set({
-    left: 0,
-    top: 0,
-    scaleX: width / nw,
-    scaleY: height / nh,
-  });
-  bg.setCoords();
+  fitBackgroundImage(bg, width, height);
+}
+
+function backgroundExportMultiplier(canvas: Canvas): number {
+  const bg = canvas.getObjects().find((o) => o.get(BACKGROUND_KEY));
+  if (!(bg instanceof FabricImage)) return 1;
+  const source = sourcePixelSize(bg.getElement() as HTMLImageElement | HTMLCanvasElement | undefined);
+  return exportPixelMultiplier(source.width, canvas.getWidth());
 }
 
 const ImageEditorStage = forwardRef<ImageEditorStageHandle, ImageEditorStageProps>(
@@ -328,28 +351,23 @@ const ImageEditorStage = forwardRef<ImageEditorStageHandle, ImageEditorStageProp
       if (!canvas || !url) return;
 
       const loadId = ++bgLoadIdRef.current;
-      const { width: w, height: h } = sizeRef.current;
 
       try {
         const el = await loadImageElement(url);
-        if (loadId !== bgLoadIdRef.current || !canvasRef.current) return;
+        const current = canvasRef.current;
+        if (loadId !== bgLoadIdRef.current || !current) return;
 
-        const existing = canvas.getObjects().find((o) => o.get(BACKGROUND_KEY));
-        if (existing) canvas.remove(existing);
+        const existing = current.getObjects().find((o) => o.get(BACKGROUND_KEY));
+        if (existing) current.remove(existing);
 
-        const scaleX = w / (el.naturalWidth || w);
-        const scaleY = h / (el.naturalHeight || h);
         const img = new FabricImage(el, {
-          left: 0,
-          top: 0,
-          scaleX,
-          scaleY,
           selectable: false,
           evented: false,
         });
         img.set(BACKGROUND_KEY, true);
-        canvas.insertAt(0, img);
-        canvas.renderAll();
+        fitBackgroundImage(img, current.getWidth(), current.getHeight());
+        current.insertAt(0, img);
+        current.renderAll();
         onBackgroundReadyRef.current?.();
       } catch {
         /* background load failed */
@@ -615,7 +633,7 @@ const ImageEditorStage = forwardRef<ImageEditorStageHandle, ImageEditorStageProp
           if (rect) rect.set({ visible: false });
           c.renderAll();
           try {
-            return await exportFabricCanvas(c, format, quality);
+            return await exportFabricCanvas(c, format, quality, backgroundExportMultiplier(c));
           } finally {
             if (rect) {
               rect.set({ visible: true });
@@ -662,22 +680,34 @@ const ImageEditorStage = forwardRef<ImageEditorStageHandle, ImageEditorStageProp
             .filter((o) => o.type === 'i-text' || o.type === 'textbox')
             .map((o) => {
               const it = o as IText;
+              const scaleX = Number(o.scaleX ?? 1) || 1;
+              const scaleY = Number(o.scaleY ?? 1) || 1;
+              let left = o.left ?? 0;
+              let top = o.top ?? 0;
+              if (o.originX === 'center') left -= (Number(o.width ?? 0) * scaleX) / 2;
+              if (o.originY === 'center') top -= (Number(o.height ?? 0) * scaleY) / 2;
+              const align = it.textAlign;
+              const background =
+                typeof it.backgroundColor === 'string' && it.backgroundColor
+                  ? it.backgroundColor
+                  : 'transparent';
               return {
                 id: crypto.randomUUID(),
                 text: it.text ?? '',
-                x: ((o.left ?? 0) / cw) * 100,
-                y: ((o.top ?? 0) / ch) * 100,
+                x: (left / cw) * 100,
+                y: (top / ch) * 100,
                 fontFamily: normalizeInfographicFont(String(it.fontFamily ?? DEFAULT_INFOGRAPHIC_FONT)),
-                fontSize: Number(it.fontSize ?? 18),
+                fontSize: Number(it.fontSize ?? 18) * scaleY,
                 color: String(it.fill ?? '#1a1a1a'),
-                fontWeight: it.fontWeight === 'bold' ? 700 : 400,
+                fontWeight: it.fontWeight === 'bold' || it.fontWeight === 700 ? 700 : 400,
                 fontStyle: it.fontStyle === 'italic' ? 'italic' : 'normal',
-                textDecoration: 'none',
+                textDecoration: 'none' as const,
                 rotation: o.angle ?? 0,
                 zIndex: 10,
-                textAlign: 'left',
-                direction: 'ltr',
-                backgroundColor: 'transparent',
+                textAlign: align === 'center' || align === 'right' ? align : 'left',
+                direction: 'ltr' as const,
+                backgroundColor: background,
+                width: o.type === 'textbox' ? Number(o.width ?? 0) * scaleX : undefined,
               };
             });
         },
@@ -762,17 +792,60 @@ const ImageEditorStage = forwardRef<ImageEditorStageHandle, ImageEditorStageProp
 
 export default ImageEditorStage;
 
+function sampleBadgeLuminance(canvas: Canvas, badge: FittedBadge): number | null {
+  const bg = canvas.getObjects().find((o) => o.get(BACKGROUND_KEY));
+  if (!(bg instanceof FabricImage)) return null;
+  const el = bg.getElement() as HTMLImageElement | HTMLCanvasElement | undefined;
+  const source = sourcePixelSize(el);
+  if (!el || source.width <= 0 || source.height <= 0) return null;
+  const scaleX = bg.scaleX || 1;
+  const scaleY = bg.scaleY || 1;
+  const visualLeft = badge.left - badge.padding;
+  const visualTop = badge.top - badge.padding;
+  const sx = (visualLeft - (bg.left ?? 0)) / scaleX;
+  const sy = (visualTop - (bg.top ?? 0)) / scaleY;
+  return readImageLuminance(
+    el,
+    sx,
+    sy,
+    (badge.width + badge.padding * 2) / scaleX,
+    (badge.height + badge.padding * 2) / scaleY,
+    source.width,
+    source.height
+  );
+}
+
 export function placeRecommendedOnCanvas(canvas: Canvas, item: InfographicRecommendedItem) {
-  const { x, y } = getZoneCenter(item.position);
   const cw = canvas.getWidth();
   const ch = canvas.getHeight();
-  const it = new IText(item.text, {
-    left: (x / 100) * cw,
-    top: (y / 100) * ch,
-    fontFamily: DEFAULT_INFOGRAPHIC_FONT,
-    fontSize: 18,
-    fill: '#1a1a1a',
-    fontWeight: 'bold',
+  const base = {
+    canvasWidth: cw,
+    canvasHeight: ch,
+    position: item.position,
+    text: item.text,
+    font: item.font,
+    tone: item.tone,
+    badge: item.badge,
+  };
+  const probed = fitInfographicBadge(base);
+  const fitted = fitInfographicBadge({
+    ...base,
+    luminance: sampleBadgeLuminance(canvas, probed),
+  });
+  const it = new Textbox(item.text, {
+    left: fitted.left,
+    top: fitted.top,
+    width: Math.max(1, fitted.width),
+    fontFamily: fitted.fontFamily,
+    fontSize: fitted.fontSize,
+    fill: fitted.fill,
+    fontWeight: fitted.fontWeight,
+    textAlign: fitted.textAlign,
+    lineHeight: fitted.lineHeight,
+    backgroundColor: fitted.backgroundColor,
+    padding: fitted.padding,
+    originX: 'left',
+    originY: 'top',
   });
   it.set(TEXT_OBJECT_KEY, true);
   canvas.add(it);

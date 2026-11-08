@@ -1,0 +1,33 @@
+.root {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  line-height: 0;
+}
+
+.root img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+}
+
+.header img {
+  max-height: 32px;
+}
+
+.footer img {
+  height: 28px;
+  max-height: 28px;
+}
+
+@media (min-width: 1024px) {
+  .header img {
+    max-height: 36px;
+  }
+}
+
+@media (max-width: 420px) {
+  .header img {
+    max-height: 28px;
+  }
+}

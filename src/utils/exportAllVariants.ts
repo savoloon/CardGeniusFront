@@ -8,6 +8,7 @@ import {
   rasterizeImageElement,
   type ExportImageFormat,
 } from '../features/imageEditor/composeExport';
+import { scaleTextLayers } from '../features/imageEditor/imageFit';
 import { STAGE_MAX_W } from '../features/imageEditor/constants';
 import { downloadBlob } from './downloadBlob';
 
@@ -27,15 +28,12 @@ async function exportInactiveVariant(
 ): Promise<Blob> {
   const url = getVariantBaseUrl(variant);
   const img = await loadImageElement(url);
-  const aspect = (img.naturalHeight || 1) / (img.naturalWidth || 1);
-  const width = Math.max(200, Math.min(STAGE_MAX_W, stageWidth || STAGE_MAX_W));
-  const height = Math.max(200, Math.round(width * aspect));
+  const photoWidth = img.naturalWidth || img.width || 1;
   const draft = getVariantDraft(variant.id);
   const layers = draft?.textLayers?.length ? draft.textLayers : variant.textLayers;
+  const scale = stageWidth > 0 ? photoWidth / stageWidth : 1;
   return rasterizeImageElement(img, format, quality, {
-    width,
-    height,
-    layers,
+    layers: scaleTextLayers(layers, scale),
   });
 }
 

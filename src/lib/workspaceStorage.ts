@@ -11,6 +11,8 @@ export interface WorkspacePersistedMeta {
   sessionId: string;
   activeIndex: number;
   variants: WorkspaceVariantMeta[];
+  /** Description tasks have no images, so they are not in `variants`. */
+  textTaskIds?: string[];
 }
 
 export function readWorkspaceMeta(): WorkspacePersistedMeta | null {

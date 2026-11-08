@@ -12,6 +12,12 @@ import {
 
   getProcessSavedImageUrl,
 
+  getProcessResultImageUrl,
+
+  getProcessStatus,
+
+  regenerateFrame,
+
 } from '../../services/api';
 
 import { getVariantBaseUrl, type ProcessVariant } from '../../types/processVariant';
@@ -51,6 +57,7 @@ import { downloadAllVariantsZip } from '../../utils/exportAllVariants';
 import { loadImageElement } from '../../lib/loadImageElement';
 import { formatToExtension, type ExportImageFormat } from './composeExport';
 import { STAGE_MAX_W } from './constants';
+import { stageSizeForImage } from './imageFit';
 import ExportFormatMenu from '../../components/dashboard/ExportFormatMenu';
 
 import styles from './ImageEditor.module.css';
@@ -71,6 +78,8 @@ interface VariantEditorProps {
 
   onRequestSwitchVariant?: (targetIndex: number) => boolean;
 
+  allowRegenerate?: boolean;
+
 }
 
 
@@ -89,6 +98,8 @@ export default function VariantEditor({
 
   onDirtyChange,
 
+  allowRegenerate = true,
+
 }: VariantEditorProps) {
 
   const { t } = useLanguage();
@@ -97,7 +108,7 @@ export default function VariantEditor({
 
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const [stageSize, setStageSize] = useState({ width: 400, height: 400 });
+  const [frameWidth, setFrameWidth] = useState(0);
 
   const [dirty, setDirty] = useState(false);
 
@@ -110,6 +121,10 @@ export default function VariantEditor({
   const [jpegQuality, setJpegQuality] = useState(0.92);
   const [exportMenu, setExportMenu] = useState<'one' | 'all' | null>(null);
   const exportMenuRef = useRef<HTMLDivElement>(null);
+  const [instruction, setInstruction] = useState('');
+  const [regenerating, setRegenerating] = useState(false);
+  const [regenError, setRegenError] = useState<string | null>(null);
+  const regenPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [canUndo, setCanUndo] = useState(false);
 
@@ -118,7 +133,11 @@ export default function VariantEditor({
   const [textSelected, setTextSelected] = useState(false);
 
   const [textSnapshot, setTextSnapshot] = useState<FabricTextSnapshot | null>(null);
-  const [imageAspect, setImageAspect] = useState(1);
+  const [loadedSize, setLoadedSize] = useState<{
+    url: string;
+    width: number;
+    height: number;
+  } | null>(null);
   const [bgReady, setBgReady] = useState(false);
   const [regionSelected, setRegionSelected] = useState(false);
   const [canPaste, setCanPaste] = useState(false);
@@ -143,6 +162,7 @@ export default function VariantEditor({
 
 
   const baseUrl = `${getVariantBaseUrl(variant)}${variant.displayBase === 'saved' ? `?r=${variant.savedRevision ?? 0}` : ''}`;
+  const naturalSize = loadedSize && loadedSize.url === baseUrl ? loadedSize : null;
 
 
 
@@ -170,12 +190,12 @@ export default function VariantEditor({
     setBgReady(false);
     loadImageElement(baseUrl)
       .then((img) => {
-        if (!cancelled && img.naturalWidth > 0) {
-          setImageAspect(img.naturalHeight / img.naturalWidth);
+        if (!cancelled && img.naturalWidth > 0 && img.naturalHeight > 0) {
+          setLoadedSize({ url: baseUrl, width: img.naturalWidth, height: img.naturalHeight });
         }
       })
       .catch(() => {
-        if (!cancelled) setImageAspect(1);
+        if (!cancelled) setLoadedSize({ url: baseUrl, width: 1, height: 1 });
       });
     return () => {
       cancelled = true;
@@ -187,17 +207,19 @@ export default function VariantEditor({
     if (!el) return;
 
     const updateSize = () => {
-      const w = Math.min(STAGE_MAX_W, el.clientWidth - 16);
-      const width = Math.max(200, w);
-      const height = Math.max(200, Math.round(width * imageAspect));
-      setStageSize({ width, height });
+      setFrameWidth(Math.max(0, el.clientWidth - 16));
     };
 
     updateSize();
     const ro = new ResizeObserver(updateSize);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [imageAspect]);
+  }, []);
+
+  const stageSize = useMemo(() => {
+    if (!naturalSize || frameWidth <= 0) return null;
+    return stageSizeForImage(frameWidth, naturalSize.width, naturalSize.height);
+  }, [naturalSize, frameWidth]);
 
   useEffect(() => {
     skipDraftPersistRef.current = false;
@@ -448,7 +470,7 @@ export default function VariantEditor({
         },
         format,
         quality: jpegQuality,
-        stageWidth: stageSize.width,
+        stageWidth: stageSize?.width ?? STAGE_MAX_W,
       });
     } catch {
       setError(t('dashboard.downloadAllError'));
@@ -559,7 +581,130 @@ export default function VariantEditor({
 
   };
 
+  const stopRegenPoll = useCallback(() => {
+    if (regenPollRef.current) {
+      clearInterval(regenPollRef.current);
+      regenPollRef.current = null;
+    }
+  }, []);
 
+  const applyReplacement = useCallback(
+    async (revision: number, scene: string) => {
+      const url = `${getProcessResultImageUrl(variant.taskId, variant.resultIndex)}?v=${revision}`;
+      skipDraftPersistRef.current = true;
+      removeVariantDraft(variant.id);
+      try {
+        await deleteVariantSave(variant.taskId, variant.resultIndex);
+      } catch {
+        /* this frame had no saved overlay */
+      }
+      stageRef.current?.clearDrawing();
+      onVariantChange(variant.id, {
+        originalUrl: url,
+        displayBase: 'original',
+        savedUrl: undefined,
+        savedRevision: undefined,
+        textLayers: [],
+        usedRecommendedKeys: [],
+        dirty: false,
+        scenePrompt: scene || variant.scenePrompt,
+        imageRevision: revision,
+      });
+      setDirty(false);
+      onDirtyChange?.(false);
+      setInstruction('');
+      setRegenerating(false);
+    },
+    [variant, onVariantChange, onDirtyChange]
+  );
+
+  const watchFrame = useCallback(
+    (baseline: number, scene: string) => {
+      stopRegenPoll();
+      const tick = async () => {
+        try {
+          const res = await getProcessStatus(variant.taskId, { format: 'url' });
+          const data = res.data;
+          if (!data) return;
+          const rev = data.imageRevisions?.[variant.resultIndex] ?? 0;
+          const regen = data.regeneration;
+          const mine = regen?.index === variant.resultIndex;
+          if (mine && regen?.status === 'failed') {
+            stopRegenPoll();
+            setRegenerating(false);
+            setRegenError(regen.error || t('dashboard.regenerateFrameError'));
+            return;
+          }
+          if (rev > baseline) {
+            stopRegenPoll();
+            await applyReplacement(rev, scene);
+          }
+        } catch {
+          /* keep polling; the old frame stays until a newer revision arrives */
+        }
+      };
+      void tick();
+      regenPollRef.current = setInterval(() => void tick(), 2000);
+    },
+    [variant.taskId, variant.resultIndex, stopRegenPoll, applyReplacement, t]
+  );
+
+  const watchFrameRef = useRef(watchFrame);
+  watchFrameRef.current = watchFrame;
+
+  useEffect(() => {
+    if (!allowRegenerate) return;
+    let cancelled = false;
+    const frame = variant;
+    setRegenerating(false);
+    setRegenError(null);
+    stopRegenPoll();
+
+    void (async () => {
+      try {
+        const res = await getProcessStatus(frame.taskId, { format: 'url' });
+        if (cancelled || !res.data) return;
+        const rev = res.data.imageRevisions?.[frame.resultIndex] ?? 0;
+        const regen = res.data.regeneration;
+        const mine = regen?.index === frame.resultIndex;
+        if (mine && regen?.status === 'processing') {
+          setRegenerating(true);
+          watchFrameRef.current(rev, frame.scenePrompt || '');
+          return;
+        }
+        if (frame.imageRevision != null && rev > frame.imageRevision) {
+          await applyReplacement(rev, frame.scenePrompt || '');
+        }
+      } catch {
+        /* keep the frame that is already on screen */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      stopRegenPoll();
+    };
+    // Restart only when the user opens another frame. The poll itself updates this one.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [variant.id, allowRegenerate]);
+
+  const handleRegenerate = async () => {
+    const text = instruction.trim();
+    if (!text || regenerating) return;
+    setRegenError(null);
+    setRegenerating(true);
+    try {
+      const current = await getProcessStatus(variant.taskId, { format: 'url' });
+      const baseline = current.data?.imageRevisions?.[variant.resultIndex] ?? 0;
+      await regenerateFrame(variant.taskId, variant.resultIndex, text, variant.scenePrompt);
+      onVariantChange(variant.id, { imageRevision: baseline, scenePrompt: variant.scenePrompt });
+      watchFrame(baseline, text);
+    } catch (e) {
+      setRegenerating(false);
+      const responseMessage = (e as { response?: { data?: { message?: string } } }).response?.data?.message;
+      setRegenError(responseMessage || (e instanceof Error ? e.message : t('dashboard.regenerateFrameError')));
+    }
+  };
 
   return (
 
@@ -687,6 +832,37 @@ export default function VariantEditor({
 
       </div>
 
+      {allowRegenerate && (
+      <div className={styles.regenBlock}>
+        <label className={styles.regenLabel} htmlFor="regenerate-frame">
+          {t('dashboard.regenerateFrameLabel')}
+        </label>
+        <textarea
+          id="regenerate-frame"
+          className={styles.regenTextarea}
+          value={instruction}
+          placeholder={t('dashboard.regenerateFramePlaceholder')}
+          onChange={(event) => setInstruction(event.target.value)}
+          disabled={regenerating}
+          rows={3}
+        />
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={() => void handleRegenerate()}
+          disabled={regenerating || !instruction.trim()}
+          loading={regenerating}
+        >
+          {t('dashboard.regenerateFrameBtn')}
+        </Button>
+        {regenError && (
+          <p className={styles.error} role="alert">
+            {regenError}
+          </p>
+        )}
+      </div>
+      )}
+
       {error && (
 
         <p className={styles.error} role="alert">
@@ -751,6 +927,7 @@ export default function VariantEditor({
 
           <div className={styles.stageOuter}>
 
+            {stageSize && (
             <ImageEditorStage
 
               ref={stageRef}
@@ -771,6 +948,7 @@ export default function VariantEditor({
               onClipboardChange={setCanPaste}
               onBackgroundReady={() => setBgReady(true)}
             />
+            )}
 
           </div>
 

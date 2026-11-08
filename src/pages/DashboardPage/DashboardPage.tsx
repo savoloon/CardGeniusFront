@@ -12,7 +12,8 @@ import ProcessQueueStatus from '../../components/dashboard/ProcessQueueStatus';
 import ProcessResults from '../../components/dashboard/ProcessResults';
 import {
   submitProcess,
-  generateDescription as apiGenerateDescription,
+  submitMultiProcess,
+  type MultiTaskInput,
   type ProcessMode,
 } from '../../services/api';
 import styles from './DashboardPage.module.css';
@@ -24,6 +25,7 @@ export default function DashboardPage() {
   const getErrorMessage = useApiErrorMessage();
   const {
     queueStatus,
+    cardTexts,
     variants: processVariants,
     updateVariant,
     resultImages,
@@ -69,10 +71,7 @@ export default function DashboardPage() {
   const [batchSizeTitle, setBatchSizeTitle] = useState(1);
   const [batchSizeDescription, setBatchSizeDescription] = useState(1);
   const [submitting, setSubmitting] = useState(false);
-  const [textsLoading, setTextsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [descTitles, setDescTitles] = useState<string[]>([]);
-  const [descDescriptions, setDescDescriptions] = useState<string[]>([]);
 
   const needsProductFields = includeCardTexts || mode === 'generate_infographic';
 
@@ -97,8 +96,6 @@ export default function DashboardPage() {
       resetResults();
       clearAllDrafts();
       setJobAwaiting(false);
-      setDescTitles([]);
-      setDescDescriptions([]);
     },
     [clearPreview, stopPolling, resetResults]
   );
@@ -110,8 +107,6 @@ export default function DashboardPage() {
     resetResults();
     clearAllDrafts();
     setJobAwaiting(false);
-    setDescTitles([]);
-    setDescDescriptions([]);
   }, [clearPreview, stopPolling, resetResults]);
 
   const handleSubmit = async () => {
@@ -133,76 +128,64 @@ export default function DashboardPage() {
     stopPolling();
     resetResults();
     clearAllDrafts();
-    setDescTitles([]);
-    setDescDescriptions([]);
-
-    let imageOk = false;
+    const countVariants =
+      mode === 'generate_background' ||
+      mode === 'generate_exposure' ||
+      mode === 'generate_exposition_by_request' ||
+      mode === 'generate_infographic';
 
     try {
-      const textsPromise = includeCardTexts
-        ? (async () => {
-            setTextsLoading(true);
-            try {
-              const res = await apiGenerateDescription(
-                productName.trim(),
-                productDescription.trim(),
-                {
-                  batchSizeTitle,
-                  batchSizeDescription,
-                }
-              );
-              if (res.success && res.data) {
-                setDescTitles(res.data.titles || []);
-                setDescDescriptions(res.data.descriptions || []);
-                return true;
-              }
-              setError(res.message ?? t('dashboard.descriptionError'));
-              return false;
-            } catch (err) {
-              setError(getErrorMessage(err) || t('dashboard.descriptionError'));
-              return false;
-            } finally {
-              setTextsLoading(false);
-            }
-          })()
-        : Promise.resolve(true);
-
-      const imagePromise = submitProcess(image, mode, {
-        variants:
-          mode === 'generate_background' ||
-          mode === 'generate_exposure' ||
-          mode === 'generate_exposition_by_request' ||
-          mode === 'generate_infographic'
-            ? variantBatchCount
-            : undefined,
-        prompt:
-          mode === 'generate_exposition_by_request' || mode === 'generate_infographic'
-            ? prompt
-            : undefined,
-        productName: mode === 'generate_infographic' ? productName.trim() : undefined,
-        productDescription:
-          mode === 'generate_infographic' ? productDescription.trim() : undefined,
-      });
-
-      const [imageRes, textsOk] = await Promise.all([imagePromise, textsPromise]);
-
-      const taskIds =
-        imageRes.success && imageRes.data?.taskIds?.length
-          ? imageRes.data.taskIds
-          : imageRes.data?.taskId
-            ? [imageRes.data.taskId]
-            : [];
-
-      if (imageRes.success && taskIds.length > 0) {
-        startPolling(taskIds);
-        setJobAwaiting(true);
-        imageOk = true;
-      } else if (!imageRes.success) {
-        setError(imageRes.message ?? t('dashboard.submitError'));
-      }
-
-      if (!imageOk && !textsOk) {
-        setError((prev) => prev ?? t('dashboard.submitError'));
+      if (includeCardTexts) {
+        const imageTask: MultiTaskInput = { mode };
+        if (countVariants) imageTask.batch_size = variantBatchCount;
+        if (mode === 'generate_exposition_by_request' || mode === 'generate_infographic') {
+          if (prompt.trim()) imageTask.prompt = prompt.trim();
+        }
+        if (mode === 'generate_infographic') {
+          imageTask.product_name = productName.trim();
+          imageTask.product_description = productDescription.trim();
+        }
+        const tasks: MultiTaskInput[] = [
+          imageTask,
+          {
+            mode: 'generate_description',
+            product_name: productName.trim(),
+            product_description: productDescription.trim(),
+            batch_size_title: batchSizeTitle,
+            batch_size_description: batchSizeDescription,
+          },
+        ];
+        const res = await submitMultiProcess(image, tasks);
+        const taskIds = res.data?.tasks?.map((task) => task.taskId).filter(Boolean) ?? [];
+        if (res.success && taskIds.length > 0) {
+          startPolling(taskIds);
+          setJobAwaiting(true);
+        } else {
+          setError(res.message ?? t('dashboard.submitError'));
+        }
+      } else {
+        const imageRes = await submitProcess(image, mode, {
+          variants: countVariants ? variantBatchCount : undefined,
+          prompt:
+            mode === 'generate_exposition_by_request' || mode === 'generate_infographic'
+              ? prompt
+              : undefined,
+          productName: mode === 'generate_infographic' ? productName.trim() : undefined,
+          productDescription:
+            mode === 'generate_infographic' ? productDescription.trim() : undefined,
+        });
+        const taskIds =
+          imageRes.success && imageRes.data?.taskIds?.length
+            ? imageRes.data.taskIds
+            : imageRes.data?.taskId
+              ? [imageRes.data.taskId]
+              : [];
+        if (imageRes.success && taskIds.length > 0) {
+          startPolling(taskIds);
+          setJobAwaiting(true);
+        } else if (!imageRes.success) {
+          setError(imageRes.message ?? t('dashboard.submitError'));
+        }
       }
     } catch (err) {
       setError(getErrorMessage(err));
@@ -217,8 +200,6 @@ export default function DashboardPage() {
     clearAllDrafts();
     setJobAwaiting(false);
     setSessionRestoredNotice(false);
-    setDescTitles([]);
-    setDescDescriptions([]);
     setError(null);
   };
 
@@ -235,10 +216,11 @@ export default function DashboardPage() {
 
   const isProcessing =
     submitting ||
-    textsLoading ||
     queueStatus === 'pending' ||
     queueStatus === 'processing';
 
+  const descTitles = cardTexts.titles;
+  const descDescriptions = cardTexts.descriptions;
   const hasImageResults = queueStatus === 'completed' && resultImages.length > 0;
   const hasTextResults = descTitles.length > 0 || descDescriptions.length > 0;
   const hasAnyResults = hasImageResults || hasTextResults;
@@ -466,6 +448,12 @@ export default function DashboardPage() {
                 onDirtyChange={(d) => {
                   variantDirtyRef.current = d;
                 }}
+                allowRegenerate={
+                  mode === 'generate_background' ||
+                  mode === 'generate_exposure' ||
+                  mode === 'generate_exposition_by_request' ||
+                  mode === 'generate_infographic'
+                }
               />
             </div>
           )}

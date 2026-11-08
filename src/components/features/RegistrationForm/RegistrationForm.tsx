@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Button, Input, Card, PasswordRequirements, CaptchaWidget } from '../../ui';
+import { Button, Input, Card, Checkbox, PasswordRequirements, CaptchaWidget } from '../../ui';
 import {
   registerUser,
   type RegisterResponse,
   type ApiError,
 } from '../../../services/api';
 import { getPasswordChecks, allPasswordChecksPass } from '../../../utils/passwordValidation';
+import { COMPANY } from '../../../constants/company';
 import { useLanguage } from '../../../contexts/LanguageContext';
 import styles from './RegistrationForm.module.css';
 
@@ -21,6 +22,8 @@ interface FormErrors {
   email?: string;
   password?: string;
   confirmPassword?: string;
+  offer?: string;
+  consent?: string;
   submit?: string;
 }
 
@@ -39,6 +42,8 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   const [errors, setErrors] = useState<FormErrors>({});
   const [loading, setLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState('');
+  const [acceptOffer, setAcceptOffer] = useState(false);
+  const [consentPd, setConsentPd] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -73,6 +78,9 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = t('validation.passwordsMismatch');
     }
+
+    if (!acceptOffer) newErrors.offer = t('auth.offerRequired');
+    if (!consentPd) newErrors.consent = t('auth.consentRequired');
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -164,6 +172,49 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
         />
 
         <CaptchaWidget onSuccess={setCaptchaToken} />
+
+        <div className={styles.consents}>
+          <Checkbox
+            checked={acceptOffer}
+            onChange={(e) => {
+              setAcceptOffer(e.target.checked);
+              setErrors((prev) => ({ ...prev, offer: undefined }));
+            }}
+            disabled={loading}
+            error={errors.offer}
+            label={
+              <>
+                {t('auth.offerConsentBefore')}{' '}
+                <Link to="/offer" target="_blank" rel="noreferrer">
+                  {t('auth.offerConsentLink')}
+                </Link>
+                {t('auth.offerConsentAfter')}
+              </>
+            }
+          />
+          <Checkbox
+            checked={consentPd}
+            onChange={(e) => {
+              setConsentPd(e.target.checked);
+              setErrors((prev) => ({ ...prev, consent: undefined }));
+            }}
+            disabled={loading}
+            error={errors.consent}
+            label={
+              <>
+                {t('auth.consentBefore', {
+                  name: COMPANY.name,
+                  inn: COMPANY.inn,
+                  email: COMPANY.email,
+                })}{' '}
+                <Link to="/privacy" target="_blank" rel="noreferrer">
+                  {t('auth.consentLink')}
+                </Link>
+                {t('auth.consentAfter')}
+              </>
+            }
+          />
+        </div>
 
         {errors.submit && (
           <div className={styles.submitError} role="alert">

@@ -21,6 +21,7 @@ export const HISTORY_STATUS_LABEL_KEYS: Record<string, string> = {
 };
 
 export function getProcessModeLabelKey(mode: string): string {
+  if (mode === 'generate_description') return 'dashboard.modeCardTexts';
   const key = PROCESS_MODE_LABEL_KEYS[mode as ProcessMode];
   return key ? `dashboard.${key}` : mode;
 }

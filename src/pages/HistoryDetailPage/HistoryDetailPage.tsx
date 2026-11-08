@@ -14,6 +14,7 @@ import {
 } from '../../services/api';
 import VariantEditor from '../../features/imageEditor/VariantEditor';
 import { buildProcessVariant, getVariantBaseUrl, type ProcessVariant } from '../../types/processVariant';
+import { itemsForImage } from '../../lib/infographicSlides';
 import type { TextLayer } from '../../types/infographicEditor';
 import { zipImageUrls } from '../../utils/exportAllVariants';
 import { downloadBlob } from '../../utils/downloadBlob';
@@ -33,6 +34,8 @@ export default function HistoryDetailPage() {
     inputImageBase64?: string | null;
   } | null>(null);
   const [processVariants, setProcessVariants] = useState<ProcessVariant[]>([]);
+  const [cardTitles, setCardTitles] = useState<string[]>([]);
+  const [cardDescriptions, setCardDescriptions] = useState<string[]>([]);
   const [activeImage, setActiveImage] = useState(0);
   const [resultError, setResultError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -67,16 +70,22 @@ export default function HistoryDetailPage() {
         });
         if (d.status === 'completed') {
           const statusRes = await getProcessStatus(d.taskId);
+          if (!cancelled && statusRes.success && statusRes.data) {
+            setCardTitles(statusRes.data.titles ?? []);
+            setCardDescriptions(statusRes.data.descriptions ?? []);
+          }
           if (!cancelled && statusRes.success && statusRes.data?.result?.images) {
             const images = statusRes.data.result.images;
             const items = statusRes.data.infographicItems ?? [];
+            const slides = statusRes.data.infographicSlides;
             const list: ProcessVariant[] = [];
             for (let i = 0; i < images.length; i++) {
               let variant = buildProcessVariant({
                 taskId: d.taskId,
                 resultIndex: i,
                 originalUrl: images[i],
-                infographicItems: items,
+                infographicItems: itemsForImage(i, slides, items),
+                scenePrompt: slides?.[i]?.imagePrompt,
               });
               try {
                 const saveRes = await getVariantSave(d.taskId, i);
@@ -268,6 +277,18 @@ export default function HistoryDetailPage() {
         ) : null}
       </div>
 
+      {record.status === 'completed' && (cardTitles.length > 0 || cardDescriptions.length > 0) && (
+        <Card className={styles.section}>
+          <h2 className={styles.sectionTitle}>{t('dashboard.cardTextsResultTitle')}</h2>
+          {cardTitles.map((text, index) => (
+            <p key={`title-${index}`} className={styles.metaInfo}>{text}</p>
+          ))}
+          {cardDescriptions.map((text, index) => (
+            <p key={`desc-${index}`} className={styles.metaInfo}>{text}</p>
+          ))}
+        </Card>
+      )}
+
       {record.status === 'completed' && showEditor && activeVariant && (
         <Card className={styles.section}>
           <VariantEditor
@@ -277,6 +298,12 @@ export default function HistoryDetailPage() {
             variantIndex={activeImage}
             variantCount={processVariants.length}
             onVariantChange={updateVariant}
+            allowRegenerate={
+              record.mode === 'generate_background' ||
+              record.mode === 'generate_exposure' ||
+              record.mode === 'generate_exposition_by_request' ||
+              record.mode === 'generate_infographic'
+            }
           />
           {processVariants.length > 1 && (
             <div className={styles.thumbRow}>
